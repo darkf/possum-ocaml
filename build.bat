@@ -1,0 +1,1 @@
+@ocamlc types.ml interpreter.ml -o psm.exe && psm
