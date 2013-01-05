@@ -79,14 +79,21 @@ let rec sprintf_node t = function
 	| Int i -> sprintf_t t ^ sprintf "<Int %d>" i
 	| Fun (args,body) -> sprintf_t t ^ sprintf "<Fun args=[%s] body=...>" (String.concat ", " (List.map (sprintf_node 0) args))
 
-let rec print_env = function
+let rec print_env t = function
 	| {sym=s; prev=p} ->
-		match p with
-		| Some _ -> printf "<Environment prev=yes>\n";
-		| None -> printf "<Environment prev=no>\n";
+		print_t t;
+		printf "<Environment>\n";
 
+		print_t (t+2);
 		printf "Symbols:\n";
-		Hashtbl.iter (fun k v -> print_t 2; printf "%s -> %s" k (sprintf_node 0 v)) s
+		Hashtbl.iter (fun k v -> print_t (t+4); printf "%s -> %s\n" k (sprintf_node 0 v)) s;
+
+		(match p with
+			| Some env ->
+				print_t (t+2);
+				printf "Prev:\n";
+				print_env (t+4) env
+			| None -> ())
 
 let print_ast ast =
 	List.iter (print_node 0) ast

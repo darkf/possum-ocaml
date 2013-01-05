@@ -8,4 +8,7 @@ let program = [Call ("print", [Atom "hi"])]
 
 let () =
 	setSymLocal genv "x" (Int 10);
-	print_env genv
+	let n = newEnv (Some genv) in
+	setSymLocal n "y" (Int 20);
+	setSymFar n "x" (Int 30);
+	print_env 0 n
