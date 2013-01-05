@@ -1,10 +1,19 @@
 open Printf
 
+(* This type is used as both an AST and for values.
+   FunDef is used in the AST for defining functions with a body, and
+   Fun is used for the function value type, which carries an internal function.
+
+   The difference between regular functions and macros is that functions take in values as arguments,
+   while macros take in a token stream as an argument and returns a new AST in place. *)
+
 type expr = Call of string * expr list (* name, args *)
-          | Fun of expr list * expr list (* args, body *)
+          | FunDef of expr list * expr list (* args, body, *)
+          | Fun of expr list * (expr list -> expr)  (* args, fn - function value type *)
           | Atom of string
           | Str of string
           | Int of int
+          | Nil
 
 type envtbl = (string, expr) Hashtbl.t
 type env = {sym : envtbl; prev : env option}
@@ -61,15 +70,24 @@ let rec print_node t = function
 	| Int i ->
 	  print_t t;
 	  printf "Int %d" i
-	| Fun (args,body) ->
+	| FunDef (args,body) ->
 	  print_t t;
-	  printf "Fun";
+	  printf "FunDef";
 	  print_t (t+2);
 	  printf "Args:";
 	  List.iter (print_node (t+4)) args;
 	  print_t (t+2);
 	  printf "Body:";
 	  List.iter (print_node (t+4)) body
+	 | Fun (args,_) ->
+	  print_t t;
+	  printf "Fun";
+	  print_t (t+2);
+	  printf "Args:";
+	  List.iter (print_node (t+4)) args
+	 | Nil ->
+	  print_t t;
+	  printf "Nil"
 
 let rec sprintf_node t = function
 	| Call (name,args) ->
@@ -77,7 +95,9 @@ let rec sprintf_node t = function
 	| Atom s -> sprintf_t t ^ sprintf "<Atom %s>" s
 	| Str s -> sprintf_t t ^ sprintf "<Str \"%s\">" s
 	| Int i -> sprintf_t t ^ sprintf "<Int %d>" i
-	| Fun (args,body) -> sprintf_t t ^ sprintf "<Fun args=[%s] body=...>" (String.concat ", " (List.map (sprintf_node 0) args))
+	| FunDef (args,body) -> sprintf_t t ^ sprintf "<FunDef args=[%s] body=...>" (String.concat ", " (List.map (sprintf_node 0) args))
+	| Fun (args,_) -> sprintf_t t ^ sprintf "<Fun args=[%s]>" (String.concat ", " (List.map (sprintf_node 0) args))
+	| Nil -> sprintf_t t ^ "Nil"
 
 let rec print_env t = function
 	| {sym=s; prev=p} ->
