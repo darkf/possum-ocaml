@@ -93,5 +93,6 @@ let () =
 	let program = [Atom "print"; Atom "int->str"; Atom "+"; Int 10; Int 20] in
 	let ts = Tokstream.create (Array.of_list program) in
 	let p = Parser.parse ts (lookup genv) in
-	print_ast p
+	print_ast p;
+	Tokenizer.tokenize "print \"hi\""
 	(*print_node 0 (eval genv program)*)
