@@ -4,10 +4,6 @@ open Types
 (* global symbol table *)
 let genv : env = newEnv None
 
-let (|<) f v = f v
-
-let debug = printf "debug: %s\n"
-
 let _printfn = function
 	| [Str x] -> printf ": %s\n" x; Nil
 	| _ -> failwith "print error"
@@ -25,14 +21,14 @@ let rec evalNode env node = match node with
 		(* call a function *)
 		debug |< sprintf "call to %s with %s" name (sprintf_node 0  |< List.hd args);
 		(match lookup env name with
-			| Some (Fun (fargs, fn)) ->
+			| Some (Fun (a, fargs, fn)) ->
 				let xargs = List.map (evalNode env) args in
-				debug |< sprintf "calling %s with args [%s]" name (String.concat "," (List.map (sprintf_node 0) xargs));
+				debug |< sprintf "calling %s(%d) with args [%s]" name a (String.concat "," (List.map (sprintf_node 0) xargs));
 				fn xargs (* call it *)
 			| Some _ -> failwith "non-fn called"
 			| None -> failwith ("no such fn " ^ name)
 		)
-	| FunDef (args, body) -> printf "!!! todo: def"; Nil
+	| FunDef (a, args, body) -> printf "!!! todo: def"; Nil
 	(* values *)
 	| Str _ | Int _ | Fun _ | Atom _ | Nil -> debug ("returning value " ^ (sprintf_node 0 node)); node
 
@@ -42,9 +38,9 @@ let rec eval env = function
 		evalNode  env x
 
 let setupStdlib () =
-	setSymLocal genv "print" |< Fun ([Atom "str"], _printfn);
-	setSymLocal genv "+" |< Fun ([Atom "lhs"; Atom "rhs"], _plus);
-	setSymLocal genv "int->str" |< Fun ([Atom "x"], _int_to_str)
+	setSymLocal genv "print" |< Fun (1, [Atom "str"], _printfn);
+	setSymLocal genv "+" |< Fun (2, [Atom "lhs"; Atom "rhs"], _plus);
+	setSymLocal genv "int->str" |< Fun (1, [Atom "x"], _int_to_str)
 
 let runTests () =
 	let reset () =
@@ -86,11 +82,16 @@ let runTests () =
 let () =
 	setupStdlib ();
 	runTests (); (* sanity tests *)
+	printf "------------------------------------------------------------------\n";
 	print_env 0 genv;
 
-	let program = [Call ("print", [
+	(*let program = [Call ("print", [
 									Call ("int->str", [
 										Call ("+", [Int 10; Int 20])
 									])
-								  ])] in
-	print_node 0 (eval genv program)
+								  ])] in*)
+	let program = [Atom "print"; Atom "int->str"; Atom "+"; Int 10; Int 20] in
+	let ts = Tokstream.create (Array.of_list program) in
+	let p = Parser.parse ts (lookup genv) in
+	print_ast p
+	(*print_node 0 (eval genv program)*)
