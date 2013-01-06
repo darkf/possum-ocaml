@@ -16,7 +16,7 @@ let rec parseOne (ts : expr Tokstream.tokstream) (lookup : string -> expr option
 							Call (s, args)
 						| _ -> Nil
 					)
-				| Int _ | Nil -> tok
+				| Str _ | Int _ | Nil -> tok
 				| _ -> failwith ("invalid token: " ^ (sprintf_node 0 tok))
 
 and parseSome ts lookup a =

@@ -73,10 +73,20 @@ let runTests () =
       assert ((evalNode genv thirty) = (Int 30));
       assert ((evalNode genv p) = (Str "30"))
     in
+    let test_parser () =
+      let program = [Atom "print"; Atom "int->str"; Atom "+"; Int 10; Int 20] in
+      let ts = Tokstream.create (Array.of_list program) in
+      let p = Parser.parse ts (lookup genv) in
+      assert (p = [Call ("print", [
+      						Call ("int->str", [
+      							Call ("+", [Int 10; Int 20])
+      						])])])
+    in
 
     test_env ();
     reset ();
     test_arithmetic ();
+    test_parser ();
     reset ()
 
 let () =
@@ -90,9 +100,8 @@ let () =
 										Call ("+", [Int 10; Int 20])
 									])
 								  ])] in*)
-	let program = [Atom "print"; Atom "int->str"; Atom "+"; Int 10; Int 20] in
-	let ts = Tokstream.create (Array.of_list program) in
+	let ts =  Tokenizer.tokenize "print int->str + 10 20" in
 	let p = Parser.parse ts (lookup genv) in
 	print_ast p;
-	Tokenizer.tokenize "print \"hi\""
+	printf "return: %s" |< sprintf_node 0 (eval genv p)
 	(*print_node 0 (eval genv program)*)

@@ -14,13 +14,11 @@ let getNode s =
 		| Failure "int_of_string" -> Atom s
 
 let tokenize str =
-	(*let ts = Tokstream.create (Array.of_list |< list_of_string str) in*)
 	let acc = ref "" in
 	let inString = ref false in
 	let inAtom = ref false in
 	(*let inEscape = ref false in
-	let inComment = ref false in
-	let xs = ref [] in*)
+	let inComment = ref false in*)
 
 	let append s n =
 	  (* append to a string ref *)
@@ -64,7 +62,4 @@ let tokenize str =
 	  				iter (rest s) xs
 	  		)
 	in
-	let toks = iter str [] in
-	Printf.printf "---\n";
-	print_ast toks;
-	()
+	Tokstream.create |< Array.of_list (iter str [])
