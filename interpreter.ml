@@ -6,6 +6,8 @@ let genv : env = newEnv None
 
 let (|<) f v = f v
 
+let debug = printf "debug: %s\n"
+
 let _printfn = function
 	| [Str x] -> printf ": %s\n" x; Nil
 	| _ -> failwith "print error"
@@ -21,17 +23,18 @@ let _int_to_str = function
 let rec evalNode env node = match node with
 	| Call (name, args) ->
 		(* call a function *)
-		printf "! call %s with %s\n" name (sprintf_node 0  |< List.hd args);
+		debug |< sprintf "call to %s with %s" name (sprintf_node 0  |< List.hd args);
 		(match lookup env name with
 			| Some (Fun (fargs, fn)) ->
-				printf "! calling %s\n" name;
-				fn (List.map (evalNode env) args)
+				let xargs = List.map (evalNode env) args in
+				debug |< sprintf "calling %s with args [%s]" name (String.concat "," (List.map (sprintf_node 0) xargs));
+				fn xargs (* call it *)
 			| Some _ -> failwith "non-fn called"
 			| None -> failwith ("no such fn " ^ name)
 		)
-	| FunDef (args, body) -> printf "todo: def\n"; Nil
+	| FunDef (args, body) -> printf "!!! todo: def"; Nil
 	(* values *)
-	| Str _ | Int _ | Fun _ | Atom _ | Nil -> printf ">>>value\n"; node
+	| Str _ | Int _ | Fun _ | Atom _ | Nil -> debug ("returning value " ^ (sprintf_node 0 node)); node
 
 let rec eval env = function
 	| [] -> Nil
