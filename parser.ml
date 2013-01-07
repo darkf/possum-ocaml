@@ -14,7 +14,10 @@ let rec parseOne (ts : expr Tokstream.tokstream) (lookup : string -> expr option
 							debug |< sprintf "parser: it's a fn (%s)" s;
 							let args = parseSome ts lookup a in
 							Call (s, args)
-						| _ -> Nil
+						| Some (SpecialForm(parsefn,_)) ->
+							debug |< sprintf "parser: special form (%s)" s;
+							parsefn ts lookup
+						| _ -> tok (* just an atom - maybe a variable *)
 					)
 				| Str _ | Int _ | Nil -> tok
 				| _ -> failwith ("invalid token: " ^ (sprintf_node 0 tok))
@@ -27,4 +30,10 @@ and parseSome ts lookup a =
 	iter [] a
 
 
-let parse ts lookup = [parseOne ts lookup]
+let parse ts lookup =
+	let rec iter acc =
+		match Tokstream.peek ts with
+		| None -> List.rev acc
+		| Some _ -> iter ((parseOne ts lookup) :: acc)
+	in
+	iter []

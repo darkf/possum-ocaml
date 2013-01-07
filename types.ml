@@ -10,13 +10,14 @@ open Printf
 type expr = Call of string * expr list (* name, args *)
           | FunDef of int * expr list * expr list (* arity, args, body, *)
           | Fun of int * expr list * (expr list -> expr)  (* arity, args, fn - function value type *)
+          | SpecialForm of (expr Tokstream.tokstream -> (string -> expr option) -> expr) * (env -> expr list -> expr) (* parsefn, evalfn *)
           | Atom of string
           | Str of string
           | Int of int
           | Nil
 
-type envtbl = (string, expr) Hashtbl.t
-type env = {sym : envtbl; prev : env option}
+and envtbl = (string, expr) Hashtbl.t
+and env = {sym : envtbl; prev : env option}
 
 let newEnv prev = {sym=Hashtbl.create 32; prev=prev}
 
@@ -42,12 +43,13 @@ let setSymLocal env sym value =
 let setSymFar first_env sym value =
 	let rec iter env =
 		if Hashtbl.mem env.sym sym then
-			(Hashtbl.replace env.sym sym value;
-			true)
+			Hashtbl.replace env.sym sym value
 		else
 			match env.prev with
 				| Some env -> iter env
-				| None -> false
+				| None ->
+					(* the binding doesn't exist in any upper scope, let's create one in the local scope *)
+					Hashtbl.add first_env.sym sym value
 	in
 	iter first_env
 
@@ -88,6 +90,7 @@ let rec print_node t = function
 	  print_t (t+2);
 	  printf "Args:";
 	  List.iter (print_node (t+4)) args
+	 | SpecialForm(_,_) -> print_t t; printf "SF\n"
 	 | Nil ->
 	  print_t t;
 	  printf "Nil"
@@ -100,6 +103,7 @@ let rec sprintf_node t = function
 	| Int i -> sprintf_t t ^ sprintf "<Int %d>" i
 	| FunDef (a,args,body) -> sprintf_t t ^ sprintf "<FunDef arity=%d args=[%s] body=...>" a (String.concat ", " (List.map (sprintf_node 0) args))
 	| Fun (a,args,_) -> sprintf_t t ^ sprintf "<Fun arity=%d args=[%s]>" a (String.concat ", " (List.map (sprintf_node 0) args))
+	| SpecialForm(_,_) -> sprintf_t t ^ "SF"
 	| Nil -> sprintf_t t ^ "Nil"
 
 let rec print_env t = function

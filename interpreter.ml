@@ -25,22 +25,41 @@ let rec evalNode env node = match node with
 				let xargs = List.map (evalNode env) args in
 				debug |< sprintf "calling %s(%d) with args [%s]" name a (String.concat "," (List.map (sprintf_node 0) xargs));
 				fn xargs (* call it *)
+			| Some (SpecialForm (_, evalfn)) ->
+				debug |< sprintf "calling special form %s with args [%s]" name (String.concat "," (List.map (sprintf_node 0) args));
+				evalfn env args (* call special form's evalfn *)
 			| Some _ -> failwith "non-fn called"
 			| None -> failwith ("no such fn " ^ name)
 		)
 	| FunDef (a, args, body) -> printf "!!! todo: def"; Nil
+	| SpecialForm (_,_) -> failwith "Shouldn't have a special form directly"
+	| Atom s ->
+		(match lookup env s with
+			| Some a -> a
+			| None -> failwith |< sprintf "Unknown binding '%s'" s)
 	(* values *)
-	| Str _ | Int _ | Fun _ | Atom _ | Nil -> debug ("returning value " ^ (sprintf_node 0 node)); node
+	| Str _ | Int _ | Fun _ | Nil -> debug ("returning value " ^ (sprintf_node 0 node)); node
 
-let rec eval env = function
-	| [] -> Nil
-	| x::xs ->
-		evalNode  env x
+let rec eval env ast =
+	let rec iter acc = function
+		| [] -> acc
+		| x::xs ->
+			iter ((evalNode env x) :: acc) xs
+	in
+	List.hd |< iter [] ast
 
 let setupStdlib () =
 	setSymLocal genv "print" |< Fun (1, [Atom "str"], _printfn);
 	setSymLocal genv "+" |< Fun (2, [Atom "lhs"; Atom "rhs"], _plus);
-	setSymLocal genv "int->str" |< Fun (1, [Atom "x"], _int_to_str)
+	setSymLocal genv "int->str" |< Fun (1, [Atom "x"], _int_to_str);
+
+	(* special forms *)
+	setSymLocal genv "set!" |< SpecialForm ((fun ts lookup -> Call("set!", Parser.parseSome ts lookup 2)), (fun env args ->
+																						match args with
+																							| [Atom name; value] ->
+																								setSymFar env name value;
+																								value
+																					   ))
 
 let runTests () =
 	let reset () =
@@ -54,6 +73,8 @@ let runTests () =
 	  (match lookup genv "x" with
 	  | Some (Int 10) -> ()
 	  | _ -> assert false);
+	  setSymFar genv "f" (Int 90);
+	  assert (Hashtbl.mem genv.sym "f");
 	  let n = newEnv (Some genv) in
 	  setSymLocal n "y" (Int 20);
 	  (match lookup n "y" with
@@ -62,7 +83,7 @@ let runTests () =
 	  (match lookup n "x" with
 			| Some (Int 10) -> ()
 			| _ -> assert false);
-	  assert (setSymFar n "x" (Int 50));
+	  setSymFar n "x" (Int 50);
 	  (match lookup n "x" with
 			| Some (Int 50) -> ()
 			| _ -> assert false)
@@ -100,8 +121,9 @@ let () =
 										Call ("+", [Int 10; Int 20])
 									])
 								  ])] in*)
-	let ts =  Tokenizer.tokenize "print int->str + 10 20" in
+	let ts =  Tokenizer.tokenize "set! x 10 set! y 50 print int->str + x y" (*"print int->str + 10 20"*) in
 	let p = Parser.parse ts (lookup genv) in
+	printf "AST:\n";
 	print_ast p;
-	printf "return: %s" |< sprintf_node 0 (eval genv p)
-	(*print_node 0 (eval genv program)*)
+	printf "\n";
+	printf "return: %s\n" |< sprintf_node 0 (eval genv p)
