@@ -29,6 +29,32 @@ and parseSome ts lookup a =
 	in
 	iter [] a
 
+and parseUntil ts lookup expr =
+	let rec iter acc =
+		match Tokstream.peek ts with
+			| Some e when e = expr ->
+				ignore |< Tokstream.consume ts; (* consume/ignore end token *)
+				List.rev acc
+			| Some _ ->
+				let e = parseOne ts lookup in
+				iter (e :: acc)
+			| None -> failwith |< sprintf "Expected %s but EOS hit" (sprintf_node 0 expr)
+	in
+	iter []
+
+and grabUntil ts expr =
+	let rec iter acc =
+		match Tokstream.peek ts with
+			| Some e when e = expr ->
+				ignore |< Tokstream.consume ts; (* consume/ignore end token *)
+				List.rev acc
+			| Some e ->
+				ignore |< Tokstream.consume ts;
+				iter (e :: acc)
+			| None -> failwith |< sprintf "Expected %s but EOS hit" (sprintf_node 0 expr)
+	in
+	iter []
+
 
 let parse ts lookup =
 	let rec iter acc =

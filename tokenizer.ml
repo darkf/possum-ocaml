@@ -47,7 +47,7 @@ let tokenize str =
 	  				(* string marker begin *)
 	  				inString := true;
 	  				iter (rest s) xs
-	  			| ' ' when not !inString ->
+	  			| ' ' | '\t' | '\r' | '\n' when not !inString ->
 	  				if String.length !acc > 0 then
 	  					(let atom = !acc in
 	  					acc := "";

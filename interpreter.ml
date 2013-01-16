@@ -31,7 +31,23 @@ let rec evalNode env node = match node with
 			| Some _ -> failwith "non-fn called"
 			| None -> failwith ("no such fn " ^ name)
 		)
-	| FunDef (a, args, body) -> printf "!!! todo: def"; Nil
+	| FunDef (a, name, args, body) ->
+		debug |< sprintf "evalNode: function definition";
+		(* We're going to build a closure to interpret the function, and then bind that. *)
+		(* TODO: Pass the environment for closures *)
+		let fn (xargs : expr list) : expr =
+			for i = 0 to a do
+				(match List.nth args i with
+					| Atom arg -> setSymLocal env arg |< List.nth xargs i
+					| _ -> failwith "error: argument not an atom");
+			done;
+			eval env body
+		in
+		let f = Fun (a, args, fn) in
+		setSymLocal env name f;
+		f
+
+
 	| SpecialForm (_,_) -> failwith "Shouldn't have a special form directly"
 	| Atom s ->
 		(match lookup env s with
@@ -40,13 +56,26 @@ let rec evalNode env node = match node with
 	(* values *)
 	| Str _ | Int _ | Fun _ | Nil -> debug ("returning value " ^ (sprintf_node 0 node)); node
 
-let rec eval env ast =
+and eval env ast =
 	let rec iter acc = function
 		| [] -> acc
 		| x::xs ->
 			iter ((evalNode env x) :: acc) xs
 	in
 	List.hd |< iter [] ast
+
+let _defun ts lookup =
+	debug |< "defun";
+	let name_e : expr = Tokstream.consumeUnsafe ts in
+	debug |< sprintf "defun: name: %s" (sprintf_node 0 name_e);
+	match name_e with
+		| Atom name ->
+			let args : expr list = Parser.grabUntil ts (Atom "is") in
+			debug |< sprintf "defun: args: [%s]" (String.concat ", " (List.map (sprintf_node 0) args));
+			let body : expr list = Parser.parseUntil ts lookup (Atom "end") in
+			debug |< sprintf "defun: body: %s" (String.concat ", " (List.map (sprintf_node 0) body));
+			FunDef ((List.length args), name, args, body)
+		| _ -> failwith "blah blah function name not an atom"
 
 let setupStdlib () =
 	setSymLocal genv "print" |< Fun (1, [Atom "str"], _printfn);
@@ -59,7 +88,8 @@ let setupStdlib () =
 																							| [Atom name; value] ->
 																								setSymFar env name value;
 																								value
-																					   ))
+																					   ));
+	setSymLocal genv "defun" |< SpecialForm (_defun, (fun env args -> Nil))
 
 let runTests () =
 	let reset () =
@@ -107,21 +137,16 @@ let runTests () =
     test_env ();
     reset ();
     test_arithmetic ();
-    test_parser ();
-    reset ()
+    reset ();
+    test_parser ()
 
 let () =
 	setupStdlib ();
 	runTests (); (* sanity tests *)
 	printf "------------------------------------------------------------------\n";
-	print_env 0 genv;
+	(*print_env 0 genv;*)
 
-	(*let program = [Call ("print", [
-									Call ("int->str", [
-										Call ("+", [Int 10; Int 20])
-									])
-								  ])] in*)
-	let ts =  Tokenizer.tokenize "set! x 10 set! y 50 print int->str + x y" (*"print int->str + 10 20"*) in
+	let ts =  Tokenizer.tokenize "defun hi msg is print msg end hi \"there\"" in (*"set! x 10 set! y 50 print int->str + x y" in*)
 	let p = Parser.parse ts (lookup genv) in
 	printf "AST:\n";
 	print_ast p;

@@ -8,7 +8,7 @@ open Printf
    while macros take in a token stream as an argument and returns a new AST in place. *)
 
 type expr = Call of string * expr list (* name, args *)
-          | FunDef of int * expr list * expr list (* arity, args, body, *)
+          | FunDef of int * string * expr list * expr list (* arity, name, args, body, *)
           | Fun of int * expr list * (expr list -> expr)  (* arity, args, fn - function value type *)
           | SpecialForm of (expr Tokstream.tokstream -> (string -> expr option) -> expr) * (env -> expr list -> expr) (* parsefn, evalfn *)
           | Atom of string
@@ -75,9 +75,9 @@ let rec print_node t = function
 	| Int i ->
 	  print_t t;
 	  printf "Int %d\n" i
-	| FunDef (a,args,body) ->
+	| FunDef (a,name,args,body) ->
 	  print_t t;
-	  printf "FunDef(%d)" a;
+	  printf "FunDef(%d) %s" a name;
 	  print_t (t+2);
 	  printf "Args:";
 	  List.iter (print_node (t+4)) args;
@@ -101,7 +101,7 @@ let rec sprintf_node t = function
 	| Atom s -> sprintf_t t ^ sprintf "<Atom %s>" s
 	| Str s -> sprintf_t t ^ sprintf "<Str \"%s\">" s
 	| Int i -> sprintf_t t ^ sprintf "<Int %d>" i
-	| FunDef (a,args,body) -> sprintf_t t ^ sprintf "<FunDef arity=%d args=[%s] body=...>" a (String.concat ", " (List.map (sprintf_node 0) args))
+	| FunDef (a,name,args,body) -> sprintf_t t ^ sprintf "<FunDef arity=%d name=%s args=[%s] body=...>" a name (String.concat ", " (List.map (sprintf_node 0) args))
 	| Fun (a,args,_) -> sprintf_t t ^ sprintf "<Fun arity=%d args=[%s]>" a (String.concat ", " (List.map (sprintf_node 0) args))
 	| SpecialForm(_,_) -> sprintf_t t ^ "SF"
 	| Nil -> sprintf_t t ^ "Nil"
