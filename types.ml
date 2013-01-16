@@ -8,9 +8,9 @@ open Printf
    while macros take in a token stream as an argument and returns a new AST in place. *)
 
 type expr = Call of string * expr list (* name, args *)
-          | FunDef of int * string * expr list * expr list (* arity, name, args, body, *)
+          | FunDef of int * string * expr list * expr list (* arity, name, args, body *)
           | Fun of int * expr list * (expr list -> expr)  (* arity, args, fn - function value type *)
-          | SpecialForm of (expr Tokstream.tokstream -> (string -> expr option) -> expr) * (env -> expr list -> expr) (* parsefn, evalfn *)
+          | SpecialForm of (expr Tokstream.tokstream -> env -> expr) * (env -> expr list -> expr) (* parsefn, evalfn *)
           | Atom of string
           | Str of string
           | Int of int
@@ -20,6 +20,7 @@ and envtbl = (string, expr) Hashtbl.t
 and env = {sym : envtbl; prev : env option}
 
 let newEnv prev = {sym=Hashtbl.create 32; prev=prev}
+let copyEnv env = {sym=Hashtbl.copy env.sym; prev=env.prev}
 
 let lookupLocal env sym =
 	try Some (Hashtbl.find env.sym sym)

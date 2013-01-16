@@ -35,17 +35,7 @@ let rec evalNode env node = match node with
 		debug |< sprintf "evalNode: function definition";
 		(* We're going to build a closure to interpret the function, and then bind that. *)
 		(* TODO: Pass the environment for closures *)
-		let fn (xargs : expr list) : expr =
-			for i = 0 to a do
-				(match List.nth args i with
-					| Atom arg -> setSymLocal env arg |< List.nth xargs i
-					| _ -> failwith "error: argument not an atom");
-			done;
-			eval env body
-		in
-		let f = Fun (a, args, fn) in
-		setSymLocal env name f;
-		f
+		Nil
 
 
 	| SpecialForm (_,_) -> failwith "Shouldn't have a special form directly"
@@ -64,7 +54,7 @@ and eval env ast =
 	in
 	List.hd |< iter [] ast
 
-let _defun ts lookup =
+let _defun ts env =
 	debug |< "defun";
 	let name_e : expr = Tokstream.consumeUnsafe ts in
 	debug |< sprintf "defun: name: %s" (sprintf_node 0 name_e);
@@ -72,9 +62,25 @@ let _defun ts lookup =
 		| Atom name ->
 			let args : expr list = Parser.grabUntil ts (Atom "is") in
 			debug |< sprintf "defun: args: [%s]" (String.concat ", " (List.map (sprintf_node 0) args));
-			let body : expr list = Parser.parseUntil ts lookup (Atom "end") in
+			let cls = newEnv (Some env) in (* the closure environment *)
+			let body : expr list = Parser.parseUntil ts cls (Atom "end") in
 			debug |< sprintf "defun: body: %s" (String.concat ", " (List.map (sprintf_node 0) body));
-			FunDef ((List.length args), name, args, body)
+			let arity = List.length args in
+			(* We're going to build a closure to interpret the function, and then bind that. *)
+			let fn (xargs : expr list) : expr =
+				let cls_ = copyEnv cls in (* clone of the closure environment for this call *)
+				for i = 0 to arity-1 do
+					(match List.nth args i with
+						| Atom arg -> setSymLocal cls_ arg |< List.nth xargs i
+						| _ -> failwith "error: argument not an atom");
+				done;
+				eval cls_ body
+			in
+			let f = Fun (arity, args, fn) in
+			setSymLocal env name f;
+			(* We substitute in a FunDef just for information purposes. By now the
+			   function is already bound in the symbol table. *)
+			FunDef (arity, name, args, body)
 		| _ -> failwith "blah blah function name not an atom"
 
 let setupStdlib () =
@@ -83,7 +89,7 @@ let setupStdlib () =
 	setSymLocal genv "int->str" |< Fun (1, [Atom "x"], _int_to_str);
 
 	(* special forms *)
-	setSymLocal genv "set!" |< SpecialForm ((fun ts lookup -> Call("set!", Parser.parseSome ts lookup 2)), (fun env args ->
+	setSymLocal genv "set!" |< SpecialForm ((fun ts env -> Call("set!", Parser.parseSome ts env 2)), (fun env args ->
 																						match args with
 																							| [Atom name; value] ->
 																								setSymFar env name value;
@@ -127,7 +133,7 @@ let runTests () =
     let test_parser () =
       let program = [Atom "print"; Atom "int->str"; Atom "+"; Int 10; Int 20] in
       let ts = Tokstream.create (Array.of_list program) in
-      let p = Parser.parse ts (lookup genv) in
+      let p = Parser.parse ts genv in
       assert (p = [Call ("print", [
       						Call ("int->str", [
       							Call ("+", [Int 10; Int 20])
@@ -146,9 +152,10 @@ let () =
 	printf "------------------------------------------------------------------\n";
 	(*print_env 0 genv;*)
 
-	let ts =  Tokenizer.tokenize "defun hi msg is print msg end hi \"there\"" in (*"set! x 10 set! y 50 print int->str + x y" in*)
-	let p = Parser.parse ts (lookup genv) in
+	let ts =  Tokenizer.tokenize "defun hi n is     defun iter x is + x 2 end   print int->str iter 10   print int->str + n n 100 end hi 10" in (*"set! x 10 set! y 50 print int->str + x y" in*)
+	let p = Parser.parse ts genv in
 	printf "AST:\n";
 	print_ast p;
 	printf "\n";
+	print_env 0 genv;
 	printf "return: %s\n" |< sprintf_node 0 (eval genv p)
