@@ -11,7 +11,7 @@ let rec parseOne (ts : expr Tokstream.tokstream) env : expr list =
 					(* lookup atom to see if it's bound *)
 					(match lookup env s with
 						| Some (Fun (a,_,_)) ->
-							debug |< sprintf "parser: it's a fn (%s)" s;
+							debug |< sprintf "parser: it's a fn: %s(%d)" s a;
 							let args = parseSome ts env a in
 							tok :: args
 						| Some (SpecialForm(parsefn,_)) ->
@@ -38,9 +38,14 @@ and parseUntil ts env expr =
 			| Some _ ->
 				let e = parseOne ts env in
 				iter (acc @ e)
-			| None -> failwith |< sprintf "Expected %s but EOS hit" (sprintf_node 0 expr)
+			| None ->
+				debug |< sprintf "ts: %s" (Tokstream.string_of_tokstream (sprintf_node 0) ts);
+				failwith |< sprintf "Expected %s but EOS hit" (sprintf_node 0 expr)
 	in
 	iter []
+
+and parseUntilWith ts env expr =
+	(parseUntil ts env expr) @ [expr]
 
 and grabUntil ts expr =
 	let rec iter acc =

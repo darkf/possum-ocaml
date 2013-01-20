@@ -56,7 +56,7 @@ let _set ts env =
 			setSymFar env name value;
 			value
 
-(*let _defun ts env =
+let _defun ts env =
 	debug |< "defun";
 	let name_e : expr = Tokstream.consumeUnsafe ts in
 	debug |< sprintf "defun: name: %s" (sprintf_node 0 name_e);
@@ -78,14 +78,14 @@ let _set ts env =
 						| Atom arg -> setSymLocal cls_ arg |< List.nth xargs i
 						| _ -> failwith "error: argument not an atom");
 				done;
-				eval cls_ body
+				let bodys : expr Tokstream.tokstream = Tokstream.create |< Array.of_list body in
+				debug |< sprintf "evaluating %s(%d)'s body" name arity;
+				eval bodys cls_
 			in
 			let f = Fun (arity, args, fn) in
 			setSymLocal env name f;
-			(* We substitute in a FunDef just for information purposes. By now the
-			   function is already bound in the symbol table. *)
-			FunDef (arity, name, args, body)
-		| _ -> failwith "blah blah function name not an atom"*)
+			f
+		| _ -> failwith "blah blah function name not an atom"
 
 let setupStdlib () =
 	setSymLocal genv "print" |< Fun (1, [Atom "str"], _printfn);
@@ -93,8 +93,8 @@ let setupStdlib () =
 	setSymLocal genv "int->str" |< Fun (1, [Atom "x"], _int_to_str);
 
 	(* special forms *)
-	setSymLocal genv "set!" |< SpecialForm ((fun ts env -> Parser.parseSome ts env 2), _set)
-	(*setSymLocal genv "defun" |< SpecialForm (_defun, (fun env args -> Nil))*)
+	setSymLocal genv "set!" |< SpecialForm ((fun ts env -> Parser.parseSome ts env 2), _set);
+	setSymLocal genv "defun" |< SpecialForm ((fun ts env -> Parser.parseUntilWith ts env (Atom "end")), _defun)
 
 let runTests () =
 	let reset () =
@@ -160,7 +160,7 @@ let () =
 	runTests (); (* sanity tests *)
 	printf "------------------------------------------------------------------\n";
 	(*print_env 0 genv;*)
-	let chan = open_in "print.psm" in
+	let chan = open_in "test_simple.psm" in
 	let program = read_entire_file chan in
 	let tc =  Tokenizer.tokenize program in (*"set! x 10 set! y 50 print int->str + x y" in*)
 	printf "=== eval stage ===\n";
