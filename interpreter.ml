@@ -49,6 +49,13 @@ and eval tc env =
 	in
 	List.hd |< iter [Nil]
 
+let _set ts env =
+	match Tokstream.consume ts with
+		| Some (Atom name) ->
+			let value = evalOne ts env in
+			setSymFar env name value;
+			value
+
 (*let _defun ts env =
 	debug |< "defun";
 	let name_e : expr = Tokstream.consumeUnsafe ts in
@@ -83,16 +90,11 @@ and eval tc env =
 let setupStdlib () =
 	setSymLocal genv "print" |< Fun (1, [Atom "str"], _printfn);
 	setSymLocal genv "+" |< Fun (2, [Atom "lhs"; Atom "rhs"], _plus);
-	setSymLocal genv "int->str" |< Fun (1, [Atom "x"], _int_to_str)
+	setSymLocal genv "int->str" |< Fun (1, [Atom "x"], _int_to_str);
 
 	(* special forms *)
-	(*setSymLocal genv "set!" |< SpecialForm ((fun ts env -> Call("set!", Parser.parseSome ts env 2)), (fun env args ->
-																						match args with
-																							| [Atom name; value] ->
-																								setSymFar env name value;
-																								value
-																					   ));
-	setSymLocal genv "defun" |< SpecialForm (_defun, (fun env args -> Nil))*)
+	setSymLocal genv "set!" |< SpecialForm ((fun ts env -> Parser.parseSome ts env 2), _set)
+	(*setSymLocal genv "defun" |< SpecialForm (_defun, (fun env args -> Nil))*)
 
 let runTests () =
 	let reset () =
