@@ -10,7 +10,7 @@ open Printf
 type expr = Call of string * expr list (* name, args *)
           | FunDef of int * string * expr list * expr list (* arity, name, args, body *)
           | Fun of int * expr list * (expr list -> expr)  (* arity, args, fn - function value type *)
-          | SpecialForm of (expr Tokstream.tokstream -> env -> expr) * (env -> expr list -> expr) (* parsefn, evalfn *)
+          | SpecialForm of (expr Tokstream.tokstream -> env -> expr list) * (expr Tokstream.tokstream -> env -> expr) (* parsefn, evalfn *)
           | Atom of string
           | Str of string
           | Int of int

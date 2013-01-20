@@ -16,45 +16,40 @@ let _int_to_str = function
 	| [Int i] -> Str (string_of_int i)
 	| _ -> failwith "not an integer"
 
-let rec evalNode env node = match node with
-	| Call (name, args) ->
-		(* call a function *)
-		debug |< sprintf "call to %s with %s" name (sprintf_node 0  |< List.hd args);
-		(match lookup env name with
-			| Some (Fun (a, fargs, fn)) ->
-				let xargs = List.map (evalNode env) args in
-				debug |< sprintf "calling %s(%d) with args [%s]" name a (String.concat "," (List.map (sprintf_node 0) xargs));
-				fn xargs (* call it *)
-			| Some (SpecialForm (_, evalfn)) ->
-				debug |< sprintf "calling special form %s with args [%s]" name (String.concat "," (List.map (sprintf_node 0) args));
-				evalfn env args (* call special form's evalfn *)
-			| Some _ -> failwith "non-fn called"
-			| None -> failwith ("no such fn " ^ name)
-		)
-	| FunDef (a, name, args, body) ->
-		debug |< sprintf "evalNode: function definition";
-		(* We're going to build a closure to interpret the function, and then bind that. *)
-		(* TODO: Pass the environment for closures *)
-		Nil
-
-
-	| SpecialForm (_,_) -> failwith "Shouldn't have a special form directly"
+let rec evalNode tc env tok =
+	match tok with
 	| Atom s ->
 		(match lookup env s with
-			| Some a -> a
+			| Some (Fun (a,fargs,fn)) ->
+				(* call a function *)
+				debug |< sprintf "call to %s(%d)" s a;
+				let xargs = List.map (fun _ -> evalOne tc env) fargs in
+				debug |< sprintf "calling %s(%d) with args [%s]" s a (String.concat "," (List.map (sprintf_node 0) xargs));
+				fn xargs (* call it *)
+			| Some (SpecialForm (_, evalfn)) ->
+				debug |< sprintf "calling special form %s" s;
+				evalfn tc env (* call special form's evalfn *)
+			| Some a -> a (* variable binding *)
 			| None -> failwith |< sprintf "Unknown binding '%s'" s)
+	| SpecialForm (_,_) -> failwith "Shouldn't have a special form directly"
 	(* values *)
-	| Str _ | Int _ | Fun _ | Nil -> debug ("returning value " ^ (sprintf_node 0 node)); node
+	| Str _ | Int _ | Fun _ | Nil -> debug ("returning value " ^ (sprintf_node 0 tok)); tok
 
-and eval env ast =
-	let rec iter acc = function
-		| [] -> acc
-		| x::xs ->
-			iter ((evalNode env x) :: acc) xs
+and evalOne tc env =
+	match Tokstream.consume tc with
+		| Some tok -> evalNode tc env tok
+		| None -> failwith "EOS"
+
+and eval tc env =
+	let rec iter acc =
+		match Tokstream.peek tc with
+		| None -> acc
+		| Some _ ->
+			iter ((evalOne tc env) :: acc)
 	in
-	List.hd |< iter [] ast
+	List.hd |< iter [Nil]
 
-let _defun ts env =
+(*let _defun ts env =
 	debug |< "defun";
 	let name_e : expr = Tokstream.consumeUnsafe ts in
 	debug |< sprintf "defun: name: %s" (sprintf_node 0 name_e);
@@ -62,6 +57,8 @@ let _defun ts env =
 		| Atom name ->
 			let args : expr list = Parser.grabUntil ts (Atom "is") in
 			debug |< sprintf "defun: args: [%s]" (String.concat ", " (List.map (sprintf_node 0) args));
+			printf "CLS:\n";
+			print_env 0 env;
 			let cls = newEnv (Some env) in (* the closure environment *)
 			let body : expr list = Parser.parseUntil ts cls (Atom "end") in
 			debug |< sprintf "defun: body: %s" (String.concat ", " (List.map (sprintf_node 0) body));
@@ -81,21 +78,21 @@ let _defun ts env =
 			(* We substitute in a FunDef just for information purposes. By now the
 			   function is already bound in the symbol table. *)
 			FunDef (arity, name, args, body)
-		| _ -> failwith "blah blah function name not an atom"
+		| _ -> failwith "blah blah function name not an atom"*)
 
 let setupStdlib () =
 	setSymLocal genv "print" |< Fun (1, [Atom "str"], _printfn);
 	setSymLocal genv "+" |< Fun (2, [Atom "lhs"; Atom "rhs"], _plus);
-	setSymLocal genv "int->str" |< Fun (1, [Atom "x"], _int_to_str);
+	setSymLocal genv "int->str" |< Fun (1, [Atom "x"], _int_to_str)
 
 	(* special forms *)
-	setSymLocal genv "set!" |< SpecialForm ((fun ts env -> Call("set!", Parser.parseSome ts env 2)), (fun env args ->
+	(*setSymLocal genv "set!" |< SpecialForm ((fun ts env -> Call("set!", Parser.parseSome ts env 2)), (fun env args ->
 																						match args with
 																							| [Atom name; value] ->
 																								setSymFar env name value;
 																								value
 																					   ));
-	setSymLocal genv "defun" |< SpecialForm (_defun, (fun env args -> Nil))
+	setSymLocal genv "defun" |< SpecialForm (_defun, (fun env args -> Nil))*)
 
 let runTests () =
 	let reset () =
@@ -124,7 +121,7 @@ let runTests () =
 			| Some (Int 50) -> ()
 			| _ -> assert false)
     in
-    let test_arithmetic () =
+    (*let test_arithmetic () =
       let thirty = Call ("+", [Int 10; Int 20]) in
       let p = Call ("int->str", [thirty]) in
       assert ((evalNode genv thirty) = (Int 30));
@@ -138,24 +135,31 @@ let runTests () =
       						Call ("int->str", [
       							Call ("+", [Int 10; Int 20])
       						])])])
-    in
+    in*)
 
     test_env ();
+    reset ()
+    (*test_arithmetic ();
     reset ();
-    test_arithmetic ();
-    reset ();
-    test_parser ()
+    test_parser ()*)
+
+let read_entire_file chan =
+	let rec iter acc =
+		try
+			let line = (input_line chan) in
+			iter (acc^line^"\n")
+		with
+			| End_of_file -> acc
+	in
+	iter ""
 
 let () =
 	setupStdlib ();
 	runTests (); (* sanity tests *)
 	printf "------------------------------------------------------------------\n";
 	(*print_env 0 genv;*)
-
-	let ts =  Tokenizer.tokenize "defun hi n is     defun iter x is + x 2 end   print int->str iter 10   print int->str + n n 100 end hi 10" in (*"set! x 10 set! y 50 print int->str + x y" in*)
-	let p = Parser.parse ts genv in
-	printf "AST:\n";
-	print_ast p;
-	printf "\n";
-	print_env 0 genv;
-	printf "return: %s\n" |< sprintf_node 0 (eval genv p)
+	let chan = open_in "print.psm" in
+	let program = read_entire_file chan in
+	let tc =  Tokenizer.tokenize program in (*"set! x 10 set! y 50 print int->str + x y" in*)
+	printf "=== eval stage ===\n";
+	printf "return: %s\n" |< sprintf_node 0 (eval tc genv)
