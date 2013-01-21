@@ -119,6 +119,8 @@ let _defun ts env =
 
 let setupStdlib () =
 	setSymLocal genv "print" |< Fun (1, [Atom "str"], _printfn);
+	setSymLocal genv "true" |< Bool true;
+	setSymLocal genv "false" |< Bool false;
 	setSymLocal genv "+" |< Fun (2, [Atom "lhs"; Atom "rhs"], _plus);
 	setSymLocal genv "int->str" |< Fun (1, [Atom "x"], _int_to_str);
 

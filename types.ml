@@ -11,6 +11,7 @@ type expr = Call of string * expr list (* name, args *)
           | FunDef of int * string * expr list * expr list (* arity, name, args, body *)
           | Fun of int * expr list * (expr list -> expr)  (* arity, args, fn - function value type *)
           | SpecialForm of (expr Tokstream.tokstream -> env -> expr list) * (expr Tokstream.tokstream -> env -> expr) (* parsefn, evalfn *)
+          | Bool of bool
           | Atom of string
           | Str of string
           | Int of int
@@ -128,5 +129,5 @@ let print_ast ast =
 
 
 let bool_of_expr = function
-	(* | Bool b -> b *)
+	| Bool b -> b
 	| n -> failwith |< sprintf "todo: bool semantics for: %s" (sprintf_node 0 n)
