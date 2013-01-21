@@ -68,6 +68,9 @@ let rec print_node t = function
 	  print_t t;
 	  printf "Call to %s\n" name;
 	  List.iter (print_node (t+2)) args
+	| Bool b ->
+	  print_t t;
+	  printf "Bool %s" (if b then "true" else "false")
 	| Atom s ->
 	  print_t t;
 	  printf "Atom %s\n" s
@@ -100,6 +103,7 @@ let rec print_node t = function
 let rec sprintf_node t = function
 	| Call (name,args) ->
 	  sprintf_t t ^ sprintf "Call to %s with [%s]" name (String.concat ", " (List.map (sprintf_node 0) args))
+	| Bool b -> sprintf_t t ^ sprintf "<Bool %s>" (if b then "true" else "false")
 	| Atom s -> sprintf_t t ^ sprintf "<Atom %s>" s
 	| Str s -> sprintf_t t ^ sprintf "<Str \"%s\">" s
 	| Int i -> sprintf_t t ^ sprintf "<Int %d>" i

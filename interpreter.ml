@@ -37,7 +37,7 @@ let rec evalNode tc env tok =
 			| None -> failwith |< sprintf "Unknown binding '%s'" s)
 	| SpecialForm (_,_) -> failwith "Shouldn't have a special form directly"
 	(* values *)
-	| Str _ | Int _ | Fun _ | Nil -> debug ("returning value " ^ (sprintf_node 0 tok)); tok
+	| Str _ | Int _ | Bool _ | Fun _ | Nil -> debug ("returning value " ^ (sprintf_node 0 tok)); tok
 
 and evalOne tc env =
 	match Tokstream.consume tc with
