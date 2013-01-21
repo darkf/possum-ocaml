@@ -16,6 +16,10 @@ let _int_to_str = function
 	| [Int i] -> Str (string_of_int i)
 	| _ -> failwith "not an integer"
 
+let _bool_to_str = function
+	| [Bool b] -> Str (if b then "true" else "false")
+	| _ -> failwith "not a boolean"
+
 let _eq = function
 	| [lhs; rhs] -> Bool (expr_equals lhs rhs)
 	| _ -> failwith "need LHS/RHS"
@@ -128,6 +132,7 @@ let setupStdlib () =
 	setSymLocal genv "=" |< Fun (2, [Atom "lhs"; Atom "rhs"], _eq);
 	setSymLocal genv "+" |< Fun (2, [Atom "lhs"; Atom "rhs"], _plus);
 	setSymLocal genv "int->str" |< Fun (1, [Atom "x"], _int_to_str);
+	setSymLocal genv "bool->str" |< Fun (1, [Atom "b"], _bool_to_str);
 
 	(* special forms *)
 	setSymLocal genv "set!" |< SpecialForm ((fun ts env -> Parser.parseSome ts env 2), _set);
