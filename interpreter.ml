@@ -16,6 +16,10 @@ let _int_to_str = function
 	| [Int i] -> Str (string_of_int i)
 	| _ -> failwith "not an integer"
 
+let _eq = function
+	| [lhs; rhs] -> Bool (expr_equals lhs rhs)
+	| _ -> failwith "need LHS/RHS"
+
 let rec evalNode tc env tok =
 	match tok with
 	| Atom s ->
@@ -121,6 +125,7 @@ let setupStdlib () =
 	setSymLocal genv "print" |< Fun (1, [Atom "str"], _printfn);
 	setSymLocal genv "true" |< Bool true;
 	setSymLocal genv "false" |< Bool false;
+	setSymLocal genv "=" |< Fun (2, [Atom "lhs"; Atom "rhs"], _eq);
 	setSymLocal genv "+" |< Fun (2, [Atom "lhs"; Atom "rhs"], _plus);
 	setSymLocal genv "int->str" |< Fun (1, [Atom "x"], _int_to_str);
 

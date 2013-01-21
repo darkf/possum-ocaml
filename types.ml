@@ -131,3 +131,6 @@ let print_ast ast =
 let bool_of_expr = function
 	| Bool b -> b
 	| n -> failwith |< sprintf "todo: bool semantics for: %s" (sprintf_node 0 n)
+
+let expr_equals lhs rhs =
+	lhs = rhs
