@@ -63,6 +63,7 @@ let _set ts env =
 			let value = evalOne ts env in
 			setSymFar env name value;
 			value
+		| _ -> failwith "set expected an atom"
 
 let _ifParse ts env =
 	let cond = Parser.parseOne ts env in

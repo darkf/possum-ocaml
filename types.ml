@@ -1,15 +1,6 @@
 open Printf
 
-(* This type is used as both an AST and for values.
-   FunDef is used in the AST for defining functions with a body, and
-   Fun is used for the function value type, which carries an internal function.
-
-   The difference between regular functions and macros is that functions take in values as arguments,
-   while macros take in a token stream as an argument and returns a new AST in place. *)
-
-type expr = Call of string * expr list (* name, args *)
-          | FunDef of int * string * expr list * expr list (* arity, name, args, body *)
-          | Fun of int * expr list * (expr list -> expr)  (* arity, args, fn - function value type *)
+type expr = Fun of int * expr list * (expr list -> expr)  (* arity, args, fn - function value type *)
           | SpecialForm of (expr Tokstream.tokstream -> env -> expr list) * (expr Tokstream.tokstream -> env -> expr) (* parsefn, evalfn *)
           | Bool of bool
           | Atom of string
@@ -64,10 +55,6 @@ let print_t t =
 let sprintf_t t = String.make t ' '
 
 let rec print_node t = function
-	| Call (name,args) ->
-	  print_t t;
-	  printf "Call to %s\n" name;
-	  List.iter (print_node (t+2)) args
 	| Bool b ->
 	  print_t t;
 	  printf "Bool %s" (if b then "true" else "false")
@@ -80,15 +67,6 @@ let rec print_node t = function
 	| Int i ->
 	  print_t t;
 	  printf "Int %d\n" i
-	| FunDef (a,name,args,body) ->
-	  print_t t;
-	  printf "FunDef(%d) %s" a name;
-	  print_t (t+2);
-	  printf "Args:";
-	  List.iter (print_node (t+4)) args;
-	  print_t (t+2);
-	  printf "Body:";
-	  List.iter (print_node (t+4)) body
 	 | Fun (a,args,_) ->
 	  print_t t;
 	  printf "Fun(%d)" a;
@@ -101,13 +79,10 @@ let rec print_node t = function
 	  printf "Nil"
 
 let rec sprintf_node t = function
-	| Call (name,args) ->
-	  sprintf_t t ^ sprintf "Call to %s with [%s]" name (String.concat ", " (List.map (sprintf_node 0) args))
 	| Bool b -> sprintf_t t ^ sprintf "<Bool %s>" (if b then "true" else "false")
 	| Atom s -> sprintf_t t ^ sprintf "<Atom %s>" s
 	| Str s -> sprintf_t t ^ sprintf "<Str \"%s\">" s
 	| Int i -> sprintf_t t ^ sprintf "<Int %d>" i
-	| FunDef (a,name,args,body) -> sprintf_t t ^ sprintf "<FunDef arity=%d name=%s args=[%s] body=...>" a name (String.concat ", " (List.map (sprintf_node 0) args))
 	| Fun (a,args,_) -> sprintf_t t ^ sprintf "<Fun arity=%d args=[%s]>" a (String.concat ", " (List.map (sprintf_node 0) args))
 	| SpecialForm(_,_) -> sprintf_t t ^ "SF"
 	| Nil -> sprintf_t t ^ "Nil"
