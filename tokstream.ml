@@ -18,6 +18,9 @@ let consumeUnsafe t =
 	t.pos <- t.pos + 1;
 	tok
 
+let tokstream_of_list lst =
+	create (Array.of_list lst)
+
 let string_of_tokstream f t =
 	let v : 'a list = Array.to_list (Array.sub t.tokens t.pos (t.len-t.pos)) in
 	Printf.sprintf "[%d of %d | %s]" t.pos t.len (String.concat "," (List.map f v))

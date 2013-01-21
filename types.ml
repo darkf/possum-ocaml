@@ -125,3 +125,8 @@ let rec print_env t = function
 
 let print_ast ast =
 	List.iter (print_node 0) ast
+
+
+let bool_of_expr = function
+	(* | Bool b -> b *)
+	| n -> failwith |< sprintf "todo: bool semantics for: %s" (sprintf_node 0 n)

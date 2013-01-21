@@ -56,6 +56,36 @@ let _set ts env =
 			setSymFar env name value;
 			value
 
+let _ifParse ts env =
+	let cond = Parser.parseOne ts env in
+	let then1 = Parser.parseOne ts env in
+	match Tokstream.peek ts with
+		| Some (Atom "else") ->
+			ignore |< Tokstream.consume ts;
+			let then2 = Parser.parseOne ts env in
+			cond @ then1 @ [Atom "else"] @ then2
+		| _ ->
+			cond @ then1
+
+let _ifEval ts env =
+	let cond = bool_of_expr (evalOne ts env) in
+	let then1 = Parser.parseOne ts env in
+
+	match Tokstream.peek ts with
+		| Some (Atom "else") ->
+			ignore |< Tokstream.consume ts; (* consume else *)
+			if cond then
+				let r = eval (Tokstream.tokstream_of_list then1) env in
+				ignore |< Parser.parseOne ts env; (* consume else branch *)
+				r
+			else
+				evalOne ts env (* evaluate else branch *)
+		| _ ->
+			if cond then
+				eval (Tokstream.tokstream_of_list then1) env
+			else Nil
+
+
 let _defun ts env =
 	debug |< "defun";
 	let name_e : expr = Tokstream.consumeUnsafe ts in
@@ -78,7 +108,7 @@ let _defun ts env =
 						| Atom arg -> setSymLocal cls_ arg |< List.nth xargs i
 						| _ -> failwith "error: argument not an atom");
 				done;
-				let bodys : expr Tokstream.tokstream = Tokstream.create |< Array.of_list body in
+				let bodys = Tokstream.tokstream_of_list body in
 				debug |< sprintf "evaluating %s(%d)'s body" name arity;
 				eval bodys cls_
 			in
@@ -94,7 +124,8 @@ let setupStdlib () =
 
 	(* special forms *)
 	setSymLocal genv "set!" |< SpecialForm ((fun ts env -> Parser.parseSome ts env 2), _set);
-	setSymLocal genv "defun" |< SpecialForm ((fun ts env -> Parser.parseUntilWith ts env (Atom "end")), _defun)
+	setSymLocal genv "defun" |< SpecialForm ((fun ts env -> Parser.parseUntilWith ts env (Atom "end")), _defun);
+	setSymLocal genv "if" |< SpecialForm (_ifParse, _ifEval)
 
 let runTests () =
 	let reset () =
@@ -160,7 +191,7 @@ let () =
 	runTests (); (* sanity tests *)
 	printf "------------------------------------------------------------------\n";
 	(*print_env 0 genv;*)
-	let chan = open_in "test_simple.psm" in
+	let chan = open_in "test_if.psm" in
 	let program = read_entire_file chan in
 	let tc =  Tokenizer.tokenize program in (*"set! x 10 set! y 50 print int->str + x y" in*)
 	printf "=== eval stage ===\n";
