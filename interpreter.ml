@@ -174,6 +174,9 @@ let setupStdlib () =
 	setSymLocal genv "int->str" |< Fun (1, [Atom "x"], _int_to_str);
 	setSymLocal genv "bool->str" |< Fun (1, [Atom "b"], _bool_to_str);
 	setSymLocal genv "concat" |< Fun (2, [Atom "lhs"; Atom "rhs"], _concat);
+	setSymLocal genv "nil?" |< Fun (1, [Atom "value"], function
+														| [Nil] -> Bool true
+														| _ -> Bool false);
 	setSymLocal genv "cons" |< Fun (2, [Atom "lhs"; Atom "rhs"], function
 																	| [x; y] -> Pair (x,y)
 																	| _ -> failwith "cons: need LHS/RHS");
@@ -183,6 +186,10 @@ let setupStdlib () =
 	setSymLocal genv "cdr" |< Fun (1, [Atom "pair"], function
 														| [Pair (_,y)] -> y
 														| _ -> failwith "cdr: need pair");
+	setSymLocal genv "empty?" |< Fun (1, [Atom "value"], function
+														| [Str s] -> Bool ((String.length s) = 0)
+														| [Pair (x,_)] -> Bool (x = Nil)
+														| _ -> failwith "empty?: need string or pair");
 
 
 	(* special forms *)

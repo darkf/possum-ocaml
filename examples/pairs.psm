@@ -3,3 +3,5 @@ print p
 print car p
 print cdr p
 print car cdr p
+print empty? cons nil nil
+print empty? cons 1 nil
