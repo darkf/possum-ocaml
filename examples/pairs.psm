@@ -1,2 +1,5 @@
 define p cons 1 cons 2 nil
 print p
+print car p
+print cdr p
+print car cdr p

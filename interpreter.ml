@@ -177,6 +177,13 @@ let setupStdlib () =
 	setSymLocal genv "cons" |< Fun (2, [Atom "lhs"; Atom "rhs"], function
 																	| [x; y] -> Pair (x,y)
 																	| _ -> failwith "cons: need LHS/RHS");
+	setSymLocal genv "car" |< Fun (1, [Atom "pair"], function
+														| [Pair (x,_)] -> x
+														| _ -> failwith "car: need pair");
+	setSymLocal genv "cdr" |< Fun (1, [Atom "pair"], function
+														| [Pair (_,y)] -> y
+														| _ -> failwith "cdr: need pair");
+
 
 	(* special forms *)
 	setSymLocal genv "set!" |< SpecialForm ((fun ts env -> Parser.parseSome ts env 2), _set);
