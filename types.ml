@@ -128,5 +128,6 @@ let list_reverse lst =
 	let rec iter acc = function
 		| Nil -> acc
 		| Pair(x,xs) -> iter (Pair (x, acc)) xs
+		| x -> failwith |< sprintf "list reverse: not a pair (%s)" (repr_of_expr x)
 	in
 	iter Nil lst
