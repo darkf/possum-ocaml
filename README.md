@@ -1,6 +1,6 @@
-possum-ocaml v-1
-copyright (c) 2013 darkf
-licensed under the terms of the MIT license
+possum-ocaml v-1  
+copyright (c) 2013 darkf  
+licensed under the terms of the MIT license  
 see LICENSE for details
 
 Possum is a scheme-inspired minimalistic language that is designed to be concise and simple.
