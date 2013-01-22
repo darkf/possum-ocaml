@@ -8,9 +8,11 @@ let _printfn = function
 	| [Str x] -> printf ": %s\n" x; Nil
 	| _ -> failwith "print error"
 
-let _plus = function
-	| [Int lhs; Int rhs] -> Int (lhs+rhs)
-	| _ -> failwith "not integers"
+let int_binop op = 
+	Fun (2, [Atom "lhs"; Atom "rhs"],
+		function
+			| [Int lhs; Int rhs] -> Int (op lhs rhs)
+			| _ -> failwith "not integers")
 
 let _int_to_str = function
 	| [Int i] -> Str (string_of_int i)
@@ -131,7 +133,10 @@ let setupStdlib () =
 	setSymLocal genv "true" |< Bool true;
 	setSymLocal genv "false" |< Bool false;
 	setSymLocal genv "=" |< Fun (2, [Atom "lhs"; Atom "rhs"], _eq);
-	setSymLocal genv "+" |< Fun (2, [Atom "lhs"; Atom "rhs"], _plus);
+	setSymLocal genv "+" |< int_binop ( + );
+	setSymLocal genv "-" |< int_binop ( - );
+	setSymLocal genv "*" |< int_binop ( * );
+	setSymLocal genv "/" |< int_binop ( / );
 	setSymLocal genv "int->str" |< Fun (1, [Atom "x"], _int_to_str);
 	setSymLocal genv "bool->str" |< Fun (1, [Atom "b"], _bool_to_str);
 
@@ -204,7 +209,7 @@ let () =
 	runTests (); (* sanity tests *)
 	printf "------------------------------------------------------------------\n";
 	(*print_env 0 genv;*)
-	let chan = open_in "test_if.psm" in
+	let chan = open_in "examples/factorial.psm" in
 	let program = read_entire_file chan in
 	let tc =  Tokenizer.tokenize program in (*"set! x 10 set! y 50 print int->str + x y" in*)
 	printf "=== eval stage ===\n";

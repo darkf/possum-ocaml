@@ -1,0 +1,8 @@
+defun factorial n is
+  if = n 0
+    1
+  else
+    * n factorial - n 1
+end
+
+print int->str factorial 10
