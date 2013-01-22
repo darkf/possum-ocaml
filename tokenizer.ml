@@ -1,3 +1,4 @@
+open Util
 open Types
 
 let list_of_string str =

@@ -1,4 +1,5 @@
 open Printf
+open Util
 
 type expr = Fun of int * expr list * (expr list -> expr)  (* arity, args, fn - function value type *)
           | SpecialForm of (expr Tokstream.tokstream -> env -> expr list) * (expr Tokstream.tokstream -> env -> expr) (* parsefn, evalfn *)
@@ -46,9 +47,6 @@ let setSymFar first_env sym value =
 					Hashtbl.add first_env.sym sym value
 	in
 	iter first_env
-
-let (|<) f v = f v
-let debug = printf "debug: %s\n"
 
 let print_t t =
 	printf "%s" (String.make t ' ')

@@ -1,4 +1,5 @@
 open Printf
+open Util
 open Types
 
 (* global symbol table *)
@@ -71,6 +72,10 @@ and eval tc env =
 			iter ((evalOne tc env) :: acc)
 	in
 	List.hd |< iter [Nil]
+
+let evalString program =
+	let tc =  Tokenizer.tokenize program in
+	eval tc genv
 
 let _set ts env =
 	match Tokstream.consume ts with
@@ -267,24 +272,3 @@ let runTests () =
     (*test_arithmetic ();
     reset ();
     test_parser ()*)
-
-let read_entire_file chan =
-	let rec iter acc =
-		try
-			let line = (input_line chan) in
-			iter (acc^line^"\n")
-		with
-			| End_of_file -> acc
-	in
-	iter ""
-
-let () =
-	setupStdlib ();
-	runTests (); (* sanity tests *)
-	printf "------------------------------------------------------------------\n";
-	(*print_env 0 genv;*)
-	let chan = open_in "examples/pairs.psm" in
-	let program = read_entire_file chan in
-	let tc =  Tokenizer.tokenize program in (*"set! x 10 set! y 50 print int->str + x y" in*)
-	printf "=== eval stage ===\n";
-	printf "return: %s\n" |< sprintf_node 0 (eval tc genv)
