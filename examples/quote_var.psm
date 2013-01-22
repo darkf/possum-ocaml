@@ -1,0 +1,2 @@
+defun f is end
+print quote-var f

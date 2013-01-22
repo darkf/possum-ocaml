@@ -122,6 +122,11 @@ let _ifEval ts env =
 				eval (Tokstream.tokstream_of_list then1) env
 			else Nil
 
+let _quoteVarParse ts env =
+	match Tokstream.consume ts with
+		| Some a -> [a]
+		| None -> [Nil]
+
 let _quoteVar ts env =
 	let tok = Tokstream.consume ts in
 	match tok with
@@ -223,6 +228,7 @@ let setupStdlib () =
 	setSymLocal genv "empty?" |< Fun (1, [Atom "value"], function
 														| [Str s] -> Bool ((String.length s) = 0)
 														| [Pair (x,_)] -> Bool (x = Nil)
+														| [Nil] -> Bool true
 														| _ -> failwith "empty?: need string or pair");
 	setSymLocal genv "list-reverse" |< Fun(1, [Atom "list"], function
 														| [Pair (_,_) as lst] -> list_reverse lst
@@ -233,7 +239,7 @@ let setupStdlib () =
 	setSymLocal genv "set!" |< SpecialForm ((fun ts env -> Parser.parseSome ts env 2), _set);
 	setSymLocal genv "define" |< SpecialForm ((fun ts env -> Parser.parseSome ts env 2), _define);
 	setSymLocal genv "defun" |< SpecialForm ((fun ts env -> Parser.parseUntilWith ts env (Atom "end")), _defun);
-	setSymLocal genv "quote-var" |< SpecialForm ((fun ts env -> Parser.parseOne ts env), _quoteVar);
+	setSymLocal genv "quote-var" |< SpecialForm (_quoteVarParse, _quoteVar);
 	setSymLocal genv "if" |< SpecialForm (_ifParse, _ifEval);
 	setSymLocal genv "list" |< SpecialForm ((fun ts env -> Parser.parseUntilWith ts env (Atom "list")), _list);
 	setSymLocal genv "begin" |< SpecialForm ((fun ts env -> Parser.parseUntilWith ts env (Atom "end")), _begin)
