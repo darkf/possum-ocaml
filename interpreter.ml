@@ -32,6 +32,10 @@ let _bool_to_str = function
 	| [Bool b] -> Str (if b then "true" else "false")
 	| _ -> failwith "not a boolean"
 
+let _list_to_str = function
+	| [Pair (_,_) as lst] -> Str (string_of_pairs lst)
+	| _ -> failwith "list->str: not a pair"
+
 let _eq = function
 	| [lhs; rhs] -> Bool (expr_equals lhs rhs)
 	| _ -> failwith "need LHS/RHS"
@@ -212,6 +216,7 @@ let setupStdlib () =
 	setSymLocal genv "/" |< int_binop ( / );
 	setSymLocal genv "int->str" |< Fun (1, [Atom "x"], _int_to_str);
 	setSymLocal genv "bool->str" |< Fun (1, [Atom "b"], _bool_to_str);
+	setSymLocal genv "list->str" |< Fun (1, [Atom "list"], _list_to_str);
 	setSymLocal genv "concat" |< Fun (2, [Atom "lhs"; Atom "rhs"], _concat);
 	setSymLocal genv "nil?" |< Fun (1, [Atom "value"], function
 														| [Nil] -> Bool true

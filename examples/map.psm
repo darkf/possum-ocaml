@@ -14,4 +14,4 @@ defun doubler x is
 	* x 2
 end
 
-print map quote-var doubler list 1 2 3 end
+print list->str map quote-var doubler list 1 2 3 end

@@ -117,6 +117,17 @@ let rec repr_of_expr = function
 	| Pair (a,b) -> sprintf "<pair %s, %s>" (repr_of_expr a) (repr_of_expr b)
 	| Nil -> "nil"
 
+let string_of_pairs lst =
+	let rec iter = function
+		| Pair (x,y) ->
+			(match y with
+				| Nil -> repr_of_expr x
+				| _ -> (repr_of_expr x)^","^(iter y))
+		| Nil -> ""
+		| _ -> failwith "string_of_pairs: not a pair"
+	in
+	sprintf "[%s]" (iter lst)
+
 let bool_of_expr = function
 	| Bool b -> b
 	| n -> failwith |< sprintf "todo: bool semantics for: %s" (sprintf_node 0 n)
