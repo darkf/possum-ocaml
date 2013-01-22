@@ -5,4 +5,4 @@ defun factorial n is
     * n factorial - n 1
 end
 
-print int->str factorial 10
+print factorial 10
