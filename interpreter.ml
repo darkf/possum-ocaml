@@ -107,7 +107,7 @@ let _defun ts env =
 			debug |< sprintf "defun: args: [%s]" (String.concat ", " (List.map (sprintf_node 0) args));
 			printf "CLS:\n";
 			print_env 0 env;
-			let cls = newEnv (Some env) in (* the closure environment *)
+			let cls = copyEnv env in (* the closure environment *)
 			let body : expr list = Parser.parseUntil ts cls (Atom "end") in
 			debug |< sprintf "defun: body: %s" (String.concat ", " (List.map (sprintf_node 0) body));
 			let arity = List.length args in
@@ -124,6 +124,7 @@ let _defun ts env =
 				eval bodys cls_
 			in
 			let f = Fun (arity, args, fn) in
+			setSymLocal cls name f; (* bind to the closure for recursion purposes *)
 			setSymLocal env name f;
 			f
 		| _ -> failwith "blah blah function name not an atom"
