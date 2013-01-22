@@ -2,6 +2,7 @@ open Printf
 
 type expr = Fun of int * expr list * (expr list -> expr)  (* arity, args, fn - function value type *)
           | SpecialForm of (expr Tokstream.tokstream -> env -> expr list) * (expr Tokstream.tokstream -> env -> expr) (* parsefn, evalfn *)
+          | Pair of expr * expr
           | Bool of bool
           | Atom of string
           | Str of string
@@ -74,6 +75,7 @@ let rec print_node t = function
 	  printf "Args:";
 	  List.iter (print_node (t+4)) args
 	 | SpecialForm(_,_) -> print_t t; printf "SF\n"
+	 | Pair (a,b) -> print_t t; printf "Pair\n"; print_node (t+2) a; print_node (t+2) b
 	 | Nil ->
 	  print_t t;
 	  printf "Nil"
@@ -85,6 +87,7 @@ let rec sprintf_node t = function
 	| Int i -> sprintf_t t ^ sprintf "<Int %d>" i
 	| Fun (a,args,_) -> sprintf_t t ^ sprintf "<Fun arity=%d args=[%s]>" a (String.concat ", " (List.map (sprintf_node 0) args))
 	| SpecialForm(_,_) -> sprintf_t t ^ "SF"
+	| Pair(a,b) -> sprintf_t t ^ sprintf "<Pair %s,%s>" (sprintf_node 0 a) (sprintf_node 0 b)
 	| Nil -> sprintf_t t ^ "Nil"
 
 let rec print_env t = function
@@ -106,13 +109,14 @@ let rec print_env t = function
 let print_ast ast =
 	List.iter (print_node 0) ast
 
-let repr_of_expr = function
+let rec repr_of_expr = function
 	| Bool b -> (if b then "true" else "false")
 	| Atom s -> sprintf "<atom %s>" s
 	| Str s -> sprintf "\"%s\"" s
 	| Int i -> string_of_int i
 	| Fun (a,_,_) -> sprintf "<fun(%d)>" a
 	| SpecialForm(_,_) -> "<special form>"
+	| Pair (a,b) -> sprintf "<pair %s, %s>" (repr_of_expr a) (repr_of_expr b)
 	| Nil -> "nil"
 
 let bool_of_expr = function

@@ -56,7 +56,7 @@ let rec evalNode tc env tok =
 			| None -> failwith |< sprintf "Unknown binding '%s'" s)
 	| SpecialForm (_,_) -> failwith "Shouldn't have a special form directly"
 	(* values *)
-	| Str _ | Int _ | Bool _ | Fun _ | Nil -> debug ("returning value " ^ (sprintf_node 0 tok)); tok
+	| Str _ | Int _ | Bool _ | Fun _ | Pair _ | Nil -> debug ("returning value " ^ (sprintf_node 0 tok)); tok
 
 and evalOne tc env =
 	match Tokstream.consume tc with
@@ -165,6 +165,7 @@ let setupStdlib () =
 	setSymLocal genv "repr" |< Fun (1, [Atom "value"], _repr);
 	setSymLocal genv "true" |< Bool true;
 	setSymLocal genv "false" |< Bool false;
+	setSymLocal genv "nil" |< Nil;
 	setSymLocal genv "=" |< Fun (2, [Atom "lhs"; Atom "rhs"], _eq);
 	setSymLocal genv "+" |< int_binop ( + );
 	setSymLocal genv "-" |< int_binop ( - );
@@ -173,6 +174,9 @@ let setupStdlib () =
 	setSymLocal genv "int->str" |< Fun (1, [Atom "x"], _int_to_str);
 	setSymLocal genv "bool->str" |< Fun (1, [Atom "b"], _bool_to_str);
 	setSymLocal genv "concat" |< Fun (2, [Atom "lhs"; Atom "rhs"], _concat);
+	setSymLocal genv "cons" |< Fun (2, [Atom "lhs"; Atom "rhs"], function
+																	| [x; y] -> Pair (x,y)
+																	| _ -> failwith "cons: need LHS/RHS");
 
 	(* special forms *)
 	setSymLocal genv "set!" |< SpecialForm ((fun ts env -> Parser.parseSome ts env 2), _set);
@@ -245,7 +249,7 @@ let () =
 	runTests (); (* sanity tests *)
 	printf "------------------------------------------------------------------\n";
 	(*print_env 0 genv;*)
-	let chan = open_in "examples/closures.psm" in
+	let chan = open_in "examples/pairs.psm" in
 	let program = read_entire_file chan in
 	let tc =  Tokenizer.tokenize program in (*"set! x 10 set! y 50 print int->str + x y" in*)
 	printf "=== eval stage ===\n";
