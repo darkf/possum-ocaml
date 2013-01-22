@@ -80,6 +80,14 @@ let _set ts env =
 			value
 		| _ -> failwith "set expected an atom"
 
+let _define ts env =
+	match Tokstream.consume ts with
+		| Some (Atom name) ->
+			let value = evalOne ts env in
+			setSymLocal env name value;
+			value
+		| _ -> failwith "set expected an atom"
+
 let _ifParse ts env =
 	let cond = Parser.parseOne ts env in
 	let then1 = Parser.parseOne ts env in
@@ -168,6 +176,7 @@ let setupStdlib () =
 
 	(* special forms *)
 	setSymLocal genv "set!" |< SpecialForm ((fun ts env -> Parser.parseSome ts env 2), _set);
+	setSymLocal genv "define" |< SpecialForm ((fun ts env -> Parser.parseSome ts env 2), _define);
 	setSymLocal genv "defun" |< SpecialForm ((fun ts env -> Parser.parseUntilWith ts env (Atom "end")), _defun);
 	setSymLocal genv "quote-var" |< SpecialForm ((fun ts env -> Parser.parseOne ts env), _quoteVar);
 	setSymLocal genv "if" |< SpecialForm (_ifParse, _ifEval)
