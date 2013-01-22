@@ -5,3 +5,5 @@ print cdr p
 print car cdr p
 print empty? cons nil nil
 print empty? cons 1 nil
+
+print list 1 2 3 end

@@ -126,6 +126,22 @@ let _quoteVar ts env =
 				| _ -> Nil)
 		| _ -> failwith "quote-var: not a var"
 
+let _list ts env =
+	let rec iter acc =
+		match Tokstream.peek ts with
+			| Some (Atom "end") ->
+				ignore |< Tokstream.consume ts;
+				List.rev acc
+			| Some a ->
+				iter ((evalOne ts env) :: acc)
+			| None -> failwith "list expected end but got EOS"
+	in
+	let rec build = function
+		| [] -> Nil
+		| x::xs -> Pair (x, build xs)
+	in
+	build (iter [])
+
 let _defun ts env =
 	debug |< "defun";
 	let name_e : expr = Tokstream.consumeUnsafe ts in
@@ -197,7 +213,8 @@ let setupStdlib () =
 	setSymLocal genv "define" |< SpecialForm ((fun ts env -> Parser.parseSome ts env 2), _define);
 	setSymLocal genv "defun" |< SpecialForm ((fun ts env -> Parser.parseUntilWith ts env (Atom "end")), _defun);
 	setSymLocal genv "quote-var" |< SpecialForm ((fun ts env -> Parser.parseOne ts env), _quoteVar);
-	setSymLocal genv "if" |< SpecialForm (_ifParse, _ifEval)
+	setSymLocal genv "if" |< SpecialForm (_ifParse, _ifEval);
+	setSymLocal genv "list" |< SpecialForm ((fun ts env -> Parser.parseUntilWith ts env (Atom "list")), _list)
 
 let runTests () =
 	let reset () =
