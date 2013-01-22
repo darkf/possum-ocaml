@@ -26,6 +26,10 @@ let _eq = function
 	| [lhs; rhs] -> Bool (expr_equals lhs rhs)
 	| _ -> failwith "need LHS/RHS"
 
+let _concat = function
+	| [Str lhs; Str rhs] -> Str (lhs ^ rhs)
+	| _ -> failwith "need str LHS/RHS"
+
 let rec evalNode tc env tok =
 	match tok with
 	| Atom s ->
@@ -140,6 +144,7 @@ let setupStdlib () =
 	setSymLocal genv "/" |< int_binop ( / );
 	setSymLocal genv "int->str" |< Fun (1, [Atom "x"], _int_to_str);
 	setSymLocal genv "bool->str" |< Fun (1, [Atom "b"], _bool_to_str);
+	setSymLocal genv "concat" |< Fun (2, [Atom "lhs"; Atom "rhs"], _concat);
 
 	(* special forms *)
 	setSymLocal genv "set!" |< SpecialForm ((fun ts env -> Parser.parseSome ts env 2), _set);
@@ -210,7 +215,7 @@ let () =
 	runTests (); (* sanity tests *)
 	printf "------------------------------------------------------------------\n";
 	(*print_env 0 genv;*)
-	let chan = open_in "examples/factorial.psm" in
+	let chan = open_in "examples/closures.psm" in
 	let program = read_entire_file chan in
 	let tc =  Tokenizer.tokenize program in (*"set! x 10 set! y 50 print int->str + x y" in*)
 	printf "=== eval stage ===\n";

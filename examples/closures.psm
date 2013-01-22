@@ -1,0 +1,13 @@
+defun holder is
+  set! x 10
+
+  defun inner is
+    set! x 20
+    print concat "inner: " int->str x
+  end
+
+  inner
+  print concat "holder: " int->str x
+end
+
+holder
