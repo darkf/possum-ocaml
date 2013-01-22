@@ -125,3 +125,10 @@ let bool_of_expr = function
 
 let expr_equals lhs rhs =
 	lhs = rhs
+
+let list_reverse lst =
+	let rec iter acc = function
+		| Nil -> acc
+		| Pair(x,xs) -> iter (Pair (x, acc)) xs
+	in
+	iter Nil lst

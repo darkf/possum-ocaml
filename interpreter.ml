@@ -206,6 +206,9 @@ let setupStdlib () =
 														| [Str s] -> Bool ((String.length s) = 0)
 														| [Pair (x,_)] -> Bool (x = Nil)
 														| _ -> failwith "empty?: need string or pair");
+	setSymLocal genv "list-reverse" |< Fun(1, [Atom "list"], function
+														| [Pair (_,_) as lst] -> list_reverse lst
+														| _ -> failwith "list-reverse: need list");
 
 
 	(* special forms *)
