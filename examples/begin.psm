@@ -1,0 +1,7 @@
+if = 10 10
+  begin
+    print "ten is ten"
+    print "and men are men"
+  end
+else
+  print "no, the world has ceased"

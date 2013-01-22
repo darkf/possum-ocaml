@@ -147,6 +147,18 @@ let _list ts env =
 	in
 	build (iter [])
 
+let _begin ts env =
+	let rec iter acc =
+		match Tokstream.peek ts with
+			| Some (Atom "end") ->
+				ignore |< Tokstream.consume ts;
+				acc
+			| Some a ->
+				iter |< evalOne ts env
+			| None -> failwith "begin: expected end, got EOS"
+	in
+	iter Nil
+
 let _defun ts env =
 	debug |< "defun";
 	let name_e : expr = Tokstream.consumeUnsafe ts in
@@ -223,7 +235,8 @@ let setupStdlib () =
 	setSymLocal genv "defun" |< SpecialForm ((fun ts env -> Parser.parseUntilWith ts env (Atom "end")), _defun);
 	setSymLocal genv "quote-var" |< SpecialForm ((fun ts env -> Parser.parseOne ts env), _quoteVar);
 	setSymLocal genv "if" |< SpecialForm (_ifParse, _ifEval);
-	setSymLocal genv "list" |< SpecialForm ((fun ts env -> Parser.parseUntilWith ts env (Atom "list")), _list)
+	setSymLocal genv "list" |< SpecialForm ((fun ts env -> Parser.parseUntilWith ts env (Atom "list")), _list);
+	setSymLocal genv "begin" |< SpecialForm ((fun ts env -> Parser.parseUntilWith ts env (Atom "end")), _begin)
 
 let runTests () =
 	let reset () =
