@@ -155,8 +155,9 @@ let _defun ts env =
 		| Atom name ->
 			let args : expr list = Parser.grabUntil ts (Atom "is") in
 			debug |< sprintf "defun: args: [%s]" (String.concat ", " (List.map (sprintf_node 0) args));
-			printf "CLS:\n";
-			print_env 0 env;
+			if !debugMode then
+				(printf "CLS:\n";
+				print_env 0 env);
 			(* If we want to be able to mutate the closing scope, we just change the cloned environment to newEnv (Some env) *)
 			let cls = copyEnv env in (* the closure environment *)
 			let body : expr list = Parser.parseUntil ts cls (Atom "end") in
