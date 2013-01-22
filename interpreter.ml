@@ -4,9 +4,18 @@ open Types
 (* global symbol table *)
 let genv : env = newEnv None
 
-let _printfn = function
+let _puts = function
 	| [Str x] -> printf ": %s\n" x; Nil
-	| _ -> failwith "print error"
+	| _ -> failwith "puts: not an str"
+
+let _print = function
+	| [Str x] -> printf ": %s\n" x; Nil (* If it's just a string, don't repr it *)
+	| [x] -> printf ": %s\n" (repr_of_expr x); Nil
+	| _ -> failwith "print: wrong args"
+
+let _repr = function
+	| [x] -> Str (repr_of_expr x)
+	| _ -> failwith "repr: wrong args"
 
 let int_binop op = 
 	Fun (2, [Atom "lhs"; Atom "rhs"],
@@ -100,6 +109,14 @@ let _ifEval ts env =
 				eval (Tokstream.tokstream_of_list then1) env
 			else Nil
 
+let _quoteVar ts env =
+	let tok = Tokstream.consume ts in
+	match tok with
+		| Some (Atom s) ->
+			(match lookup env s with
+				| Some a -> a
+				| _ -> Nil)
+		| _ -> failwith "quote-var: not a var"
 
 let _defun ts env =
 	debug |< "defun";
@@ -111,6 +128,7 @@ let _defun ts env =
 			debug |< sprintf "defun: args: [%s]" (String.concat ", " (List.map (sprintf_node 0) args));
 			printf "CLS:\n";
 			print_env 0 env;
+			(* If we want to be able to mutate the closing scope, we just change the cloned environment to newEnv (Some env) *)
 			let cls = copyEnv env in (* the closure environment *)
 			let body : expr list = Parser.parseUntil ts cls (Atom "end") in
 			debug |< sprintf "defun: body: %s" (String.concat ", " (List.map (sprintf_node 0) body));
@@ -134,7 +152,9 @@ let _defun ts env =
 		| _ -> failwith "blah blah function name not an atom"
 
 let setupStdlib () =
-	setSymLocal genv "print" |< Fun (1, [Atom "str"], _printfn);
+	setSymLocal genv "puts" |< Fun (1, [Atom "str"], _puts);
+	setSymLocal genv "print" |< Fun (1, [Atom "value"], _print);
+	setSymLocal genv "repr" |< Fun (1, [Atom "value"], _repr);
 	setSymLocal genv "true" |< Bool true;
 	setSymLocal genv "false" |< Bool false;
 	setSymLocal genv "=" |< Fun (2, [Atom "lhs"; Atom "rhs"], _eq);
@@ -149,6 +169,7 @@ let setupStdlib () =
 	(* special forms *)
 	setSymLocal genv "set!" |< SpecialForm ((fun ts env -> Parser.parseSome ts env 2), _set);
 	setSymLocal genv "defun" |< SpecialForm ((fun ts env -> Parser.parseUntilWith ts env (Atom "end")), _defun);
+	setSymLocal genv "quote-var" |< SpecialForm ((fun ts env -> Parser.parseOne ts env), _quoteVar);
 	setSymLocal genv "if" |< SpecialForm (_ifParse, _ifEval)
 
 let runTests () =

@@ -106,6 +106,14 @@ let rec print_env t = function
 let print_ast ast =
 	List.iter (print_node 0) ast
 
+let repr_of_expr = function
+	| Bool b -> (if b then "true" else "false")
+	| Atom s -> sprintf "<atom %s>" s
+	| Str s -> sprintf "\"%s\"" s
+	| Int i -> string_of_int i
+	| Fun (a,_,_) -> sprintf "<fun(%d)>" a
+	| SpecialForm(_,_) -> "<special form>"
+	| Nil -> "nil"
 
 let bool_of_expr = function
 	| Bool b -> b
