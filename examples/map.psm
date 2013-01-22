@@ -1,0 +1,17 @@
+defun map f lst is
+	defun iter xs is
+		if empty? xs
+			nil
+		else
+			cons f car xs 
+			  iter cdr xs
+	end
+
+	iter lst
+end
+
+defun doubler x is
+	* x 2
+end
+
+print map quote-var doubler list 1 2 3 end
