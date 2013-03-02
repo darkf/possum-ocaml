@@ -33,4 +33,21 @@ let () =
 
 	setupStdlib ();
 	runTests (); (* sanity tests *)
-	ignore |< List.map evalFile !files
+
+	if List.length !files = 0 then
+	begin
+		(* REPL mode *)
+		let rec iter () =
+			printf "> ";
+			match read_line () with
+				| ":q" -> printf "bye\n"
+				| line ->
+					let result = evalString line in
+					printf "%s\n" (Types.repr_of_expr result);
+					iter ()
+		in
+		iter ()
+	end
+	else
+		(* evaluate input files *)
+		ignore |< List.map evalFile !files
