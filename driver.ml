@@ -42,8 +42,13 @@ let () =
 			match read_line () with
 				| ":q" -> printf "bye\n"
 				| line ->
-					let result = evalString line in
-					printf "%s\n" (Types.repr_of_expr result);
+					(try
+						let result = evalString line in
+						printf "%s\n" (Types.repr_of_expr result);
+					with
+						(* todo: more specific exceptions *)
+						| Failure s -> printf "Error: %s\n" s
+						| exn -> raise exn);
 					iter ()
 		in
 		iter ()
