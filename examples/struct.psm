@@ -1,0 +1,24 @@
+defstruct point is
+  x
+  y
+end
+
+defun point-set! p x y is
+  struct-set! p "x" x
+  struct-set! p "y" y
+end
+
+defun print-point p is
+  define x struct-get p "x"
+  define y struct-get p "y"
+  print concat concat concat concat "<point " int->str x " " int->str y ">"
+end
+
+defun f is
+	define p1 struct-new point 10 20 end
+	print-point p1
+	point-set! p1 30 40
+	print-point p1
+end
+
+f
