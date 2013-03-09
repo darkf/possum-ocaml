@@ -3,6 +3,7 @@ open Util
 
 type expr = Fun of int * expr list * (expr list -> expr)  (* arity, args, fn - function value type *)
           | SpecialForm of (expr Tokstream.tokstream -> env -> expr list) * (expr Tokstream.tokstream -> env -> expr) (* parsefn, evalfn *)
+          | Struct of string list * (string, expr) Hashtbl.t (* field names (for ordering), name -> value map of fields *)
           | Pair of expr * expr
           | Bool of bool
           | Atom of string
@@ -74,6 +75,7 @@ let rec print_node t = function
 	  List.iter (print_node (t+4)) args
 	 | SpecialForm(_,_) -> print_t t; printf "SF\n"
 	 | Pair (a,b) -> print_t t; printf "Pair\n"; print_node (t+2) a; print_node (t+2) b
+	 | Struct _ -> print_t t; printf "Struct";
 	 | Nil ->
 	  print_t t;
 	  printf "Nil"
@@ -84,6 +86,7 @@ let rec sprintf_node t = function
 	| Str s -> sprintf_t t ^ sprintf "<Str \"%s\">" s
 	| Int i -> sprintf_t t ^ sprintf "<Int %d>" i
 	| Fun (a,args,_) -> sprintf_t t ^ sprintf "<Fun arity=%d args=[%s]>" a (String.concat ", " (List.map (sprintf_node 0) args))
+	| Struct _ -> sprintf_t t ^ "<Struct>"
 	| SpecialForm(_,_) -> sprintf_t t ^ "SF"
 	| Pair(a,b) -> sprintf_t t ^ sprintf "<Pair %s,%s>" (sprintf_node 0 a) (sprintf_node 0 b)
 	| Nil -> sprintf_t t ^ "Nil"
@@ -115,6 +118,7 @@ let rec repr_of_expr = function
 	| Fun (a,_,_) -> sprintf "<fun(%d)>" a
 	| SpecialForm(_,_) -> "<special form>"
 	| Pair (a,b) -> sprintf "<pair %s, %s>" (repr_of_expr a) (repr_of_expr b)
+	| Struct _ -> sprintf "<struct>"
 	| Nil -> "nil"
 
 let string_of_pairs lst =

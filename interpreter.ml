@@ -61,7 +61,7 @@ let rec evalNode tc env tok =
 			| None -> failwith |< sprintf "Unknown binding '%s'" s)
 	| SpecialForm (_,_) -> failwith "Shouldn't have a special form directly"
 	(* values *)
-	| Str _ | Int _ | Bool _ | Fun _ | Pair _ | Nil -> debug ("returning value " ^ (sprintf_node 0 tok)); tok
+	| Str _ | Int _ | Bool _ | Fun _ | Struct _ | Pair _ | Nil -> debug ("returning value " ^ (sprintf_node 0 tok)); tok
 
 and evalOne tc env =
 	match Tokstream.consume tc with
@@ -168,6 +168,36 @@ let _begin ts env =
 	in
 	iter Nil
 
+let _defstruct ts env =
+	match Tokstream.consume ts with
+		| Some (Atom name) ->
+			(match Tokstream.consume ts with
+				| Some (Atom "is") ->
+					(* Struct definitions are structs themselves... struct-new just copies it,
+					   vaguely like `clone` in prototypal languages *)
+					let unatomize = (function | Atom s -> s | _ -> failwith "?") in
+					let fields = List.map unatomize |< Parser.grabUntil ts (Atom "end") in
+					let ht : (string, expr) Hashtbl.t = Hashtbl.create (List.length fields) in
+					List.iter (fun s -> Hashtbl.add ht s Nil) fields; (* default to nil fields *)
+					let v = Struct (fields, ht) in
+					debug |< sprintf "binding struct: %s\n" name;
+					setSymLocal env name v;
+					v
+				| _ -> failwith "defstruct: expected is"
+			)
+		| _ -> failwith "defstruct"
+
+let _structnew ts env =
+	match Tokstream.consume ts with
+		| Some (Atom name) ->
+			(match lookup env name with
+				| Some (Struct (fields,_)) ->
+					let ht = Hashtbl.create (List.length fields) in
+					List.iter (fun k -> Hashtbl.add ht k (evalOne ts env)) fields;
+					Struct (fields, ht)
+				| _ -> failwith "struct-new: need a struct")
+		| _ -> failwith "struct-new"
+
 let _defun ts env =
 	debug |< "defun";
 	let name_e : expr = Tokstream.consumeUnsafe ts in
@@ -247,7 +277,9 @@ let setupStdlib () =
 	setSymLocal genv "quote-var" |< SpecialForm (_quoteVarParse, _quoteVar);
 	setSymLocal genv "if" |< SpecialForm (_ifParse, _ifEval);
 	setSymLocal genv "list" |< SpecialForm ((fun ts env -> Parser.parseUntilWith ts env (Atom "list")), _list);
-	setSymLocal genv "begin" |< SpecialForm ((fun ts env -> Parser.parseUntilWith ts env (Atom "end")), _begin)
+	setSymLocal genv "begin" |< SpecialForm ((fun ts env -> Parser.parseUntilWith ts env (Atom "end")), _begin);
+	setSymLocal genv "defstruct" |< SpecialForm ((fun ts env -> Parser.parseUntilWith ts env (Atom "end")), _defstruct);
+	setSymLocal genv "struct-new" |< SpecialForm ((fun ts env -> Parser.parseUntil ts env (Atom "end")), _structnew)
 
 let runTests () =
 	let reset () =
