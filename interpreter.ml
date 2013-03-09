@@ -269,6 +269,14 @@ let setupStdlib () =
 														| [Pair (_,_) as lst] -> list_reverse lst
 														| _ -> failwith "list-reverse: need list");
 
+	setSymLocal genv "struct-get" |< Fun (2, [Atom "struct"; Atom "field"], function
+														| [Struct (_,values); Str field] -> Hashtbl.find values field
+														| _ -> failwith "struct-get: need struct and string");
+
+	setSymLocal genv "struct-set!" |< Fun (3, [Atom "struct"; Atom "field"; Atom "value"], function
+														| [Struct (_,values); Str field; value] -> Hashtbl.replace values field value; value
+														| _ -> failwith "struct-set!: need struct, string and value");
+
 
 	(* special forms *)
 	setSymLocal genv "set!" |< SpecialForm ((fun ts env -> Parser.parseSome ts env 2), _set);
