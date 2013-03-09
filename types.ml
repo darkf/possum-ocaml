@@ -52,8 +52,6 @@ let setSymFar first_env sym value =
 let print_t t =
 	printf "%s" (String.make t ' ')
 
-let sprintf_t t = String.make t ' '
-
 let rec print_node t = function
 	| Bool b ->
 	  print_t t;
@@ -80,36 +78,6 @@ let rec print_node t = function
 	  print_t t;
 	  printf "Nil"
 
-let rec sprintf_node t = function
-	| Bool b -> sprintf_t t ^ sprintf "<Bool %s>" (if b then "true" else "false")
-	| Atom s -> sprintf_t t ^ sprintf "<Atom %s>" s
-	| Str s -> sprintf_t t ^ sprintf "<Str \"%s\">" s
-	| Int i -> sprintf_t t ^ sprintf "<Int %d>" i
-	| Fun (a,args,_) -> sprintf_t t ^ sprintf "<Fun arity=%d args=[%s]>" a (String.concat ", " (List.map (sprintf_node 0) args))
-	| Struct _ -> sprintf_t t ^ "<Struct>"
-	| SpecialForm(_,_) -> sprintf_t t ^ "SF"
-	| Pair(a,b) -> sprintf_t t ^ sprintf "<Pair %s,%s>" (sprintf_node 0 a) (sprintf_node 0 b)
-	| Nil -> sprintf_t t ^ "Nil"
-
-let rec print_env t = function
-	| {sym=s; prev=p} ->
-		print_t t;
-		printf "<Environment>\n";
-
-		print_t (t+2);
-		printf "Symbols:\n";
-		Hashtbl.iter (fun k v -> print_t (t+4); printf "%s -> %s\n" k (sprintf_node 0 v)) s;
-
-		(match p with
-			| Some env ->
-				print_t (t+2);
-				printf "Prev:\n";
-				print_env (t+4) env
-			| None -> ())
-
-let print_ast ast =
-	List.iter (print_node 0) ast
-
 let rec repr_of_expr = function
 	| Bool b -> (if b then "true" else "false")
 	| Atom s -> sprintf "<atom %s>" s
@@ -120,6 +88,25 @@ let rec repr_of_expr = function
 	| Pair (a,b) -> sprintf "<pair %s, %s>" (repr_of_expr a) (repr_of_expr b)
 	| Struct _ -> sprintf "<struct>"
 	| Nil -> "nil"
+
+let rec print_env t = function
+	| {sym=s; prev=p} ->
+		print_t t;
+		printf "<Environment>\n";
+
+		print_t (t+2);
+		printf "Symbols:\n";
+		Hashtbl.iter (fun k v -> print_t (t+4); printf "%s -> %s\n" k (repr_of_expr v)) s;
+
+		(match p with
+			| Some env ->
+				print_t (t+2);
+				printf "Prev:\n";
+				print_env (t+4) env
+			| None -> ())
+
+let print_ast ast =
+	List.iter (print_node 0) ast
 
 let string_of_pairs lst =
 	let rec iter = function
@@ -134,7 +121,7 @@ let string_of_pairs lst =
 
 let bool_of_expr = function
 	| Bool b -> b
-	| n -> failwith |< sprintf "todo: bool semantics for: %s" (sprintf_node 0 n)
+	| n -> failwith |< sprintf "todo: bool semantics for: %s" (repr_of_expr n)
 
 let expr_equals lhs rhs =
 	lhs = rhs

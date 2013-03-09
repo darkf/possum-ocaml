@@ -21,7 +21,7 @@ let rec parseOne (ts : expr Tokstream.tokstream) env : expr list =
 						| _ -> [tok] (* just an atom - maybe a variable *)
 					)
 				| Str _ | Int _ | Nil -> [tok]
-				| _ -> failwith ("invalid token: " ^ (sprintf_node 0 tok))
+				| _ -> failwith ("invalid token: " ^ (repr_of_expr tok))
 
 and parseSome ts (env : env) a =
 	let rec iter acc = function
@@ -40,8 +40,8 @@ and parseUntil ts env expr =
 				let e = parseOne ts env in
 				iter (acc @ e)
 			| None ->
-				debug |< sprintf "ts: %s" (Tokstream.string_of_tokstream (sprintf_node 0) ts);
-				failwith |< sprintf "Expected %s but EOS hit" (sprintf_node 0 expr)
+				debug |< sprintf "ts: %s" (Tokstream.string_of_tokstream repr_of_expr ts);
+				failwith |< sprintf "Expected %s but EOS hit" (repr_of_expr expr)
 	in
 	iter []
 
@@ -57,10 +57,9 @@ and grabUntil ts expr =
 			| Some e ->
 				ignore |< Tokstream.consume ts;
 				iter (e :: acc)
-			| None -> failwith |< sprintf "Expected %s but EOS hit" (sprintf_node 0 expr)
+			| None -> failwith |< sprintf "Expected %s but EOS hit" (repr_of_expr expr)
 	in
 	iter []
-
 
 let parse ts (env : env) =
 	let rec iter acc =

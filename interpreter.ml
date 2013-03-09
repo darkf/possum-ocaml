@@ -52,7 +52,7 @@ let rec evalNode tc env tok =
 				(* call a function *)
 				debug |< sprintf "call to %s(%d)" s a;
 				let xargs = List.map (fun _ -> evalOne tc env) fargs in
-				debug |< sprintf "calling %s(%d) with args [%s]" s a (String.concat "," (List.map (sprintf_node 0) xargs));
+				debug |< sprintf "calling %s(%d) with args [%s]" s a (String.concat "," (List.map repr_of_expr xargs));
 				fn xargs (* call it *)
 			| Some (SpecialForm (_, evalfn)) ->
 				debug |< sprintf "calling special form %s" s;
@@ -61,7 +61,7 @@ let rec evalNode tc env tok =
 			| None -> failwith |< sprintf "Unknown binding '%s'" s)
 	| SpecialForm (_,_) -> failwith "Shouldn't have a special form directly"
 	(* values *)
-	| Str _ | Int _ | Bool _ | Fun _ | Struct _ | Pair _ | Nil -> debug ("returning value " ^ (sprintf_node 0 tok)); tok
+	| Str _ | Int _ | Bool _ | Fun _ | Struct _ | Pair _ | Nil -> debug ("returning value " ^ (repr_of_expr tok)); tok
 
 and evalOne tc env =
 	match Tokstream.consume tc with
@@ -201,18 +201,18 @@ let _structnew ts env =
 let _defun ts env =
 	debug |< "defun";
 	let name_e : expr = Tokstream.consumeUnsafe ts in
-	debug |< sprintf "defun: name: %s" (sprintf_node 0 name_e);
+	debug |< sprintf "defun: name: %s" (repr_of_expr name_e);
 	match name_e with
 		| Atom name ->
 			let args : expr list = Parser.grabUntil ts (Atom "is") in
-			debug |< sprintf "defun: args: [%s]" (String.concat ", " (List.map (sprintf_node 0) args));
+			debug |< sprintf "defun: args: [%s]" (String.concat ", " (List.map repr_of_expr args));
 			if !debugMode then
 				(printf "CLS:\n";
 				print_env 0 env);
 			(* If we want to be able to mutate the closing scope, we just change the cloned environment to newEnv (Some env) *)
 			let cls = copyEnv env in (* the closure environment *)
 			let body : expr list = Parser.parseUntil ts cls (Atom "end") in
-			debug |< sprintf "defun: body: %s" (String.concat ", " (List.map (sprintf_node 0) body));
+			debug |< sprintf "defun: body: %s" (String.concat ", " (List.map repr_of_expr body));
 			let arity = List.length args in
 			(* We're going to build a closure to interpret the function, and then bind that. *)
 			let fn (xargs : expr list) : expr =
