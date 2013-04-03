@@ -287,7 +287,9 @@ let setupStdlib () =
 	setSymLocal genv "list" |< SpecialForm ((fun ts env -> Parser.parseUntilWith ts env (Atom "list")), _list);
 	setSymLocal genv "begin" |< SpecialForm ((fun ts env -> Parser.parseUntilWith ts env (Atom "end")), _begin);
 	setSymLocal genv "defstruct" |< SpecialForm ((fun ts env -> Parser.parseUntilWith ts env (Atom "end")), _defstruct);
-	setSymLocal genv "struct-new" |< SpecialForm ((fun ts env -> Parser.parseUntil ts env (Atom "end")), _structnew)
+	setSymLocal genv "struct-new" |< SpecialForm ((fun ts env -> Parser.parseUntil ts env (Atom "end")), _structnew);
+
+	Io.register (setSymLocal genv)
 
 let runTests () =
 	let reset () =

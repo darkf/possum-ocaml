@@ -1,1 +1,1 @@
-@ocamlc util.ml tokstream.ml types.ml tokenizer.ml parser.ml interpreter.ml driver.ml -o psm.exe && psm %*
+@ocamlc Unix.cma util.ml tokstream.ml types.ml tokenizer.ml parser.ml io.ml interpreter.ml driver.ml -o psm.exe && psm %*
