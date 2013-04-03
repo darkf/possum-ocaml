@@ -1,0 +1,2 @@
+print concat concat "hi" chr 32 "there"
+print ord " "

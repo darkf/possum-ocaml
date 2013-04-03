@@ -268,7 +268,12 @@ let setupStdlib () =
 	setSymLocal genv "list-reverse" |< Fun(1, [Atom "list"], function
 														| [Pair (_,_) as lst] -> list_reverse lst
 														| _ -> failwith "list-reverse: need list");
-
+	setSymLocal genv "chr" |< Fun (1, [Atom "n"], function
+														| [Int n] -> Str (String.make 1 |< Char.chr n)
+														| _ -> failwith "chr: needs int");
+	setSymLocal genv "ord" |< Fun (1, [Atom "s"], function
+														| [Str s] -> Int (Char.code s.[0])
+														| _ -> failwith "ord: needs str");
 	setSymLocal genv "struct-get" |< Fun (2, [Atom "struct"; Atom "field"], function
 														| [Struct (_,values); Str field] -> Hashtbl.find values field
 														| _ -> failwith "struct-get: need struct and string");
