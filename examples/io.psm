@@ -1,0 +1,23 @@
+define file file-open "hi.txt"
+
+defun read-line s is
+  defun iter acc is
+	  define q stream-read s 1
+	  if = q "" begin
+	    acc
+	  end
+	  else begin
+	    if = q chr 10
+	      acc
+	    else begin
+	      iter concat acc q
+	    end
+	  end
+  end
+
+  iter ""
+end
+
+print read-line file
+print read-line file
+stream-close file

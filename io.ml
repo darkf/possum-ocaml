@@ -31,6 +31,24 @@ let _stream_read = function
 			| _ -> failwith "stream-read: needs read-bytes")
 	| _ -> failwith "stream-read: needs stream"
 
+let _stream_write = function
+	| [Struct (_,ht) as s; Str _ as n] when is_stream s ->
+		let writebytes = Hashtbl.find ht "write-bytes" in
+		(match writebytes with
+			| Fun (_,_,fn) ->
+				fn [s; n]
+			| _ -> failwith "stream-write: needs write-bytes")
+	| _ -> failwith "stream-write: needs stream"
+
+let _stream_close = function
+	| [Struct (_,ht) as s] when is_stream s ->
+		let close = Hashtbl.find ht "close" in
+		(match close with
+			| Fun (_,_,fn) ->
+				fn [s]
+			| _ -> failwith "stream-close: needs close")
+	| _ -> failwith "stream-close: needs stream"
+
 let _file_open = function
 	| [Str filename] ->
 		(try
@@ -66,4 +84,6 @@ let _file_open = function
 
 let register bind =
 	bind "stream-read" |< Fun (2, [Atom "stream"; Atom "n"], _stream_read);
+	bind "stream-write" |< Fun (2, [Atom "stream"; Atom "data"], _stream_write);
+	bind "stream-close" |< Fun (1, [Atom "stream"], _stream_close);
 	bind "file-open" |< Fun (1, [Atom "filename"], _file_open)
